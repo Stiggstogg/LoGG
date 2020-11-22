@@ -23,6 +23,8 @@ gameScene.init = function() {
 
     // numbers for scores
     this.hits = 0;              // number of hits
+    this.misses = 0;            // number of misses
+    this.hitRate = 0;           // hit rate
 
 };
 
@@ -52,7 +54,9 @@ gameScene.create = function () {
     this.bg.setInteractive();
     this.bg.on('pointerdown', function (pointer) {
 
-        console.log('miss'); // TODO: Replace with correct action!
+        // add one to the number of misses and recalculate (and update) hit rate
+        this.misses++;
+        this.hitRateCalc();
 
     }, this);
 
@@ -89,50 +93,61 @@ gameScene.create = function () {
     // set interactivity
     this.target.setInteractive();
 
-    let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
-    let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
-
     this.target.on('pointerdown', function (pointer) {
 
-        // calculate new position (in game coordinates)
-        this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
-        this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
-
-        // set new position of the target (in canvas coordinates)
-        this.target.setPosition(this.CoordGameToCanvas(this.targetX,'x'), this.CoordGameToCanvas(this.targetY, 'y'));
-
-        // write new coordinates to text
-        this.xCoordText.setText('x: ' + this.targetX);
-        this.yCoordText.setText('y: ' + this.targetY);
-
-        // add hit to counter
-        this.hits++;
-
-        // change background color of the title
-        let addPos = 0;         // number of positions to add due to the spaces in the title (to make sure the spaces are not counted)
-
-        for (let i = 0; i < this.titleSpacePos.length; i++) {
-            if (this.hits + addPos > this.titleSpacePos[i]) {       // check if the number of hits (plus the already added positions) is bigger then the position of the space
-                addPos++;
-            }
-        }
-
-        this.titleText[this.hits + addPos - 1].setBackgroundColor('#ff00ae');   // change the background color of the corresponding letter
+        this.hitTarget();
 
     }, this);
 
-    // add text (right pane)
+    // add coordinates text (right pane)
     // ---------------------
 
+    // x and y position of the texts (relative to game width and height) and vertical spaces
+    let xpos1 = 0.82;
+    let xpos2 = 0.95;           // positions of the coordinates (right aligned)
+    let xpos3 = 0.99;           // positions of the numbers (right aligned)
+    let ypos1 = 0.30;
+    let yspace = 0.05;
+    let ypos2 = ypos1 + 6 * yspace;
+
+
     // define text style
-    let textStyle = {
+    let textStyleCoord = {
         fontFamily: 'Courier',
         fontSize: '50px',
         color: '#27ff00'
     };
 
-    this.xCoordText = this.add.text(this.gw * 0.82, this.gh * 0.3 ,'x: ' + this.targetX, textStyle);
-    this.yCoordText = this.add.text(this.gw * 0.82, this.gh * 0.4 ,'y: ' + this.targetY, textStyle);
+    this.add.text(this.gw * xpos1, this.gh * ypos1 ,'x:', textStyleCoord);
+    this.add.text(this.gw * xpos1, this.gh * (ypos1 + 2 * yspace) ,'y:', textStyleCoord);
+
+    this.xCoordText = this.add.text(this.gw * xpos2, this.gh * ypos1, this.targetX, textStyleCoord);
+    this.xCoordText.setOrigin(1, 0);
+    this.yCoordText = this.add.text(this.gw * xpos2, this.gh * (ypos1 + 2 * yspace), this.targetY, textStyleCoord);
+    this.yCoordText.setOrigin(1, 0);
+
+    // add hits, hit rate and time
+    let textStyleNumbers = {
+        fontFamily: 'Courier',
+        fontSize: '23px',
+        color: '#27ff00',
+    };
+
+    // names
+    this.add.text(this.gw * xpos1, this.gh * ypos2 ,'Hits:', textStyleNumbers);
+    this.add.text(this.gw * xpos1, this.gh * (ypos2 + yspace) ,'Hit Rate:', textStyleNumbers);
+    this.add.text(this.gw * xpos1, this.gh * (ypos2 + 2 * yspace) ,'Time:', textStyleNumbers);
+
+    // numbers
+    this.hitText = this.add.text(this.gw * xpos3, this.gh * ypos2 ,'0', textStyleNumbers);
+    this.hitText.setOrigin(1, 0);
+    this.hitRateText = this.add.text(this.gw * xpos3, this.gh * (ypos2 + yspace) ,'100 %', textStyleNumbers);
+    this.hitRateText.setOrigin(1, 0);
+    this.timeText = this.add.text(this.gw * xpos3, this.gh * (ypos2 + 2 * yspace) ,'00:00', textStyleNumbers);
+    this.timeText.setOrigin(1, 0);
+
+
+    this.hitRateText.originX = 1;
 
     // add title text
     // --------------------
@@ -164,7 +179,14 @@ gameScene.create = function () {
         'R', 'e', 'v', 'i', 'e', 'w', 's'
     ];
 
-    this.titleSpacePos = [3, 12, 18, 22];    // positions with spaces
+    // get positions which contain a character (not spaces)
+    this.titleCharacterPos = []
+
+    for (let i = 0; i < title.length; i++) {
+        if (title[i] !== ' ') {
+            this.titleCharacterPos.push(i);
+        }
+    }
 
     this.titleText = [];
 
@@ -191,6 +213,48 @@ gameScene.create = function () {
 
 };
 
+// update method
+gameScene.update = function () {
+
+};
+
+// function which defines what happens when the target is hit
+gameScene.hitTarget = function () {
+
+    // calculate target size
+    let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
+    let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
+
+    // calculate new random position (in game coordinates)
+    this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
+    this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
+
+    // set new position of the target (in canvas coordinates)
+    this.target.setPosition(this.CoordGameToCanvas(this.targetX,'x'), this.CoordGameToCanvas(this.targetY, 'y'));
+
+    // write new coordinates to text
+    this.xCoordText.setText(this.targetX);
+    this.yCoordText.setText(this.targetY);
+
+    // add hit to counter, change hits and hit rate
+    this.hits++;
+    this.hitText.setText(this.hits);
+    this.hitRateCalc();
+
+    // change background color of the corresponding letter in the title (omit spaces)
+    this.titleText[this.titleCharacterPos[this.hits - 1]].setBackgroundColor('#ff00ae');
+
+}
+
+// calculate and change hit rate
+gameScene.hitRateCalc = function () {
+
+    this.hitRate = this.hits / (this.hits + this.misses) * 100;
+
+    this.hitRateText.setText(this.hitRate.toFixed(0) + ' %');
+
+};
+
 // calculates from game coordinates (area on which can be shot) to the real coordinates in the canvas
 gameScene.CoordGameToCanvas = function (gameCoord, dim) {
 
@@ -209,12 +273,6 @@ gameScene.yCoordGameToCanvas = function (gameY) {
     return this.lineWidth + gameX * (this.gw * this.horLinePos - 1.5 * this.lineWidth) / 100;
 
 }
-
-
-// update method
-gameScene.update = function () {
-
-};
 
 // set the configuration of the game
 let config = {
