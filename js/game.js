@@ -40,6 +40,10 @@ gameScene.preload = function () {
     this.load.image('target', 'assets/images/target.png');              // target image (1px, red)
     this.load.image('background', 'assets/images/background.png');      // background image (10x10 px, black)
 
+    // load audio
+    this.load.audio('hit', 'assets/audio/PewBang.mp3');
+    this.load.audio('miss', 'assets/audio/Pew.mp3');
+
 };
 
 // create objects (executed once after preload())
@@ -119,6 +123,7 @@ gameScene.create = function () {
     // set properties
     this.target.setOrigin(0.5, 0.5);
     this.target.setScale(this.targetSize);
+    this.target.alpha = 0.0001;         // set alpha to very low so that target is not visible anymore (if it is 0 it is not interactive anymore!) TODO: Fix that!
 
     // set interactivity
     this.target.setInteractive();
@@ -225,6 +230,12 @@ gameScene.create = function () {
         this.titleText.push(this.add.text(titleStartPos*this.gw + i * titleSeparation*this.gw, this.gh * 0.06, title[i], this.titleStyle));
     }
 
+    // Audio
+    // --------------------
+
+    this.soundHit = this.sound.add('hit');
+    this.soundMiss = this.sound.add('miss');
+
     // keyboard events
     // --------------------
 
@@ -279,7 +290,10 @@ gameScene.update = function () {
 gameScene.hitTarget = function () {
 
     // check if it is the first target and then start the game (timer) and remove the start text
-    if (this.state == 0 || this.state == 1) {
+    if (this.state < 2) {
+
+        // play sound
+        this.soundHit.play();
 
         // add hit to counter, change hits and hit rate
         this.hits++;
@@ -328,6 +342,9 @@ gameScene.hitTarget = function () {
 gameScene.missTarget = function () {
 
     if (this.state == 1) {      // only register misses when the game started already
+
+        // play sound
+        this.soundMiss.play();
 
         // add one to the number of misses and recalculate (and update) hit rate
         this.misses++;
