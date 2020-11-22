@@ -108,7 +108,16 @@ gameScene.create = function () {
         // add hit to counter
         this.hits++;
 
-        // change style of the title letter
+        // change background color of the title
+        let addPos = 0;         // number of positions to add due to the spaces in the title (to make sure the spaces are not counted)
+
+        for (let i = 0; i < this.titleSpacePos.length; i++) {
+            if (this.hits + addPos > this.titleSpacePos[i]) {       // check if the number of hits (plus the already added positions) is bigger then the position of the space
+                addPos++;
+            }
+        }
+
+        this.titleText[this.hits + addPos - 1].setBackgroundColor('#ff00ae');   // change the background color of the corresponding letter
 
     }, this);
 
