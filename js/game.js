@@ -26,6 +26,7 @@ gameScene.init = function() {
     this.misses = 0;            // number of misses
     this.hitRate = 0;           // hit rate
     this.time = 0;              // time
+    this.score = 0;             // score
 
     // states
     this.state = 0;             // state of the game: 0: starting, 1: playing, 2: end
@@ -351,9 +352,10 @@ gameScene.gameFinished = function () {
     // set state to finished
     this.state = 2;
 
-    // set final time
+    // set final time and calculate score
     let now = new Date();
     this.time = (now - this.startTime) / 1000;
+    this.score = this.hitRate / this.time * 2000;
 
     // destroy the target
     this.target.destroy();
@@ -368,7 +370,7 @@ gameScene.gameFinished = function () {
 
     this.startEndText = this.add.text(this.coordGameToCanvas(50, 'x'),
         this.coordGameToCanvas(95, 'y'),
-        'The game is finished!\n\nYour score is: ???\n\n\n\nShoot again to restart the game!',
+        'The game is finished!\n\nYour score is: ' + this.score.toFixed(0) + '\n\n\n\nShoot to restart the game!',
         textStyleEnd);
     this.startEndText.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
     this.startEndText.setOrigin(0.5, 0);
