@@ -25,6 +25,7 @@ gameScene.init = function() {
     this.hits = 0;              // number of hits
     this.misses = 0;            // number of misses
     this.hitRate = 0;           // hit rate
+    this.time = 0;              // time
 
     // states
     this.state = 0;             // state of the game: 0: starting, 1: playing, 2: end
@@ -244,6 +245,33 @@ gameScene.create = function () {
 // update method
 gameScene.update = function () {
 
+    // update timer
+    if (this.state == 1) {
+        let now = new Date();
+        let diff = now - this.startTime;        // difference in milli seconds
+
+        let mm = Math.floor(diff / 1000 / 60);  // minutes part of the difference
+        let ss = diff / 1000 - mm * 60;             // seconds part of the difference
+
+        let mmDisplay;
+        let ssDisplay;
+
+        // add 0 as prefix if numbers are smaller then 10
+        if (mm < 10) {
+            mmDisplay = '0' + mm.toFixed(0);
+        } else {
+            mmDisplay = mm.toFixed(0);
+        }
+
+        if (Math.round(ss) < 10) {
+            ssDisplay = '0' + ss.toFixed(0);
+        } else {
+            ssDisplay = ss.toFixed(0);
+        }
+
+        this.timeText.setText(mmDisplay + ':' + ssDisplay);      // set timer text
+    }
+
 };
 
 // function which defines what happens when the target is hit
@@ -267,6 +295,9 @@ gameScene.hitTarget = function () {
             // remove start text
             this.startText1.destroy();
             this.startText2.destroy();
+
+            // set start time
+            this.startTime = new Date();
         }
 
         // check if game is finished and change state
@@ -319,6 +350,10 @@ gameScene.gameFinished = function () {
 
     // set state to finished
     this.state = 2;
+
+    // set final time
+    let now = new Date();
+    this.time = (now - this.startTime) / 1000;
 
     // destroy the target
     this.target.destroy();
