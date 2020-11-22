@@ -15,11 +15,14 @@ gameScene.init = function() {
     // line properties
     this.lineWidth = 5;         // width of the lines (in px)
     this.lineColor = 0x27ff00;  // colors of the lines
-    this.vertLinePos = 0.2;     // relative y position of the vertical line (above is the title) (relative to game width)
-    this.horLinePos = 0.8;      // relative x position of the hrizontal line (to the left the coordinates are shown) (relative to game height)
+    this.vertLinePos = 0.8;     // relative y position of the vertical line (above is the title) (relative to game height)
+    this.horLinePos = 0.2;      // relative x position of the hrizontal line (to the left the coordinates are shown) (relative to game width)
 
     // target properties
     this.targetSize = 100;      // size of the target (in px as the asset is 1 px)
+
+    // numbers for scores
+    this.hits = 0;              // number of hits
 
 };
 
@@ -64,8 +67,8 @@ gameScene.create = function () {
     graphics.strokeRectShape(rect);     // draw rectangle
 
     // lines
-    let vertLine = new Phaser.Geom.Line(0, this.gh*this.vertLinePos, this.gw, this.gh*this.vertLinePos);
-    let horLine = new Phaser.Geom.Line(this.gw*this.horLinePos, this.gh*this.vertLinePos, this.gw*this.horLinePos, this.gh);
+    let vertLine = new Phaser.Geom.Line(this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh);
+    let horLine = new Phaser.Geom.Line(0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos);
 
     graphics.strokeLineShape(vertLine);
     graphics.strokeLineShape(horLine);
@@ -74,7 +77,10 @@ gameScene.create = function () {
     // ---------------------
 
     // create
-    this.target = this.add.sprite(this.gw*0.5, this.gh*0.5, 'target');
+    this.targetX = 50;      // starting positions
+    this.targetY = 50;
+
+    this.target = this.add.sprite(this.CoordGameToCanvas(this.targetX,'x'), this.CoordGameToCanvas(this.targetY, 'y'), 'target');
 
     // set properties
     this.target.setOrigin(0.5, 0.5);
@@ -86,22 +92,77 @@ gameScene.create = function () {
     let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
     let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
 
-    console.log(targetSizeGameX);
-    console.log(targetSizeGameY);
-
     this.target.on('pointerdown', function (pointer) {
 
-        let x = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
-        let y = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
+        // calculate new position (in game coordinates)
+        this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
+        this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
 
-        console.log(x);
-        console.log(y);
+        // set new position of the target (in canvas coordinates)
+        this.target.setPosition(this.CoordGameToCanvas(this.targetX,'x'), this.CoordGameToCanvas(this.targetY, 'y'));
 
-        this.target.setPosition(this.CoordGameToCanvas(x,'x'), this.CoordGameToCanvas(y, 'y'));
+        // write new coordinates to text
+        this.xCoordText.setText('x: ' + this.targetX);
+        this.yCoordText.setText('y: ' + this.targetY);
 
-        console.log('HIT!');
+        // add hit to counter
+        this.hits++;
+
+        // change style of the title letter
 
     }, this);
+
+    // add text (right pane)
+    // ---------------------
+
+    // define text style
+    let textStyle = {
+        fontFamily: 'Courier',
+        fontSize: '50px',
+        color: '#27ff00'
+    };
+
+    this.xCoordText = this.add.text(this.gw * 0.82, this.gh * 0.3 ,'x: ' + this.targetX, textStyle);
+    this.yCoordText = this.add.text(this.gw * 0.82, this.gh * 0.4 ,'y: ' + this.targetY, textStyle);
+
+    // add title text
+    // --------------------
+
+    // text style and position
+    this.titleStyle = {
+        fontFamily: 'Courier',
+        fontSize: '60px',
+        color: '#27ff00',
+        fontStyle: 'bold'
+    };
+
+    this.titleStyleShot = {             // style of the title when scored
+        fontFamily: 'Courier',
+        fontSize: '60px',
+        color: '#27ff00',
+        fontStyle: 'bold',
+        backgroundColor: '#FF00AE'
+    }
+
+    let titleStartPos = 0.043;    // x start position of the title (relative to game width)
+    let titleSeparation = 0.03; // separation between the letter (relative to game width)
+
+    // create title text array
+    let title = ['2', '0', '0', ' ',
+        'E', 'p', 'i', 's', 'o', 'd', 'e', 's', ' ',
+        'L', 'i', 'g', 'h', 't', ' ',
+        'G', 'u', 'n', ' ',
+        'R', 'e', 'v', 'i', 'e', 'w', 's'
+    ];
+
+    this.titleSpacePos = [3, 12, 18, 22];    // positions with spaces
+
+    this.titleText = [];
+
+    // add all texts
+    for (let i = 0; i < title.length; i++) {
+        this.titleText.push(this.add.text(titleStartPos*this.gw + i * titleSeparation*this.gw, this.gh * 0.06, title[i], this.titleStyle));
+    }
 
     // keyboard events
     // --------------------
@@ -125,10 +186,10 @@ gameScene.create = function () {
 gameScene.CoordGameToCanvas = function (gameCoord, dim) {
 
     if (dim === 'x') {
-        return this.lineWidth + gameCoord / 100 * (this.gw * this.horLinePos - 1.5 * this.lineWidth);
+        return this.lineWidth + gameCoord / 100 * (this.gw * this.vertLinePos - 1.5 * this.lineWidth);
     }
     else if (dim === 'y') {
-        return this.gh * this.vertLinePos + this.lineWidth * 0.5 + (100 - gameCoord) / 100 * (this.gh * (1 - this.vertLinePos) - 1.5 * this.lineWidth);
+        return this.gh * this.horLinePos + this.lineWidth * 0.5 + (100 - gameCoord) / 100 * (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth);
     }
 
 };
