@@ -109,7 +109,7 @@ gameScene.create = function () {
         textStyleStart);
     this.startText2.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
     this.startText2.setOrigin(0.5, 0);
-
+s
 
     // add target (rectangle)
     // ---------------------
@@ -118,7 +118,7 @@ gameScene.create = function () {
     this.targetX = 50;      // starting positions
     this.targetY = 50;
 
-    this.target = this.add.rectangle(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'), this.targetSize, this.targetSize, 0xffffff);
+    this.target = this.add.rectangle(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'), this.targetSize, this.targetSize, this.lineColor);
 
     // set properties
     this.target.setAlpha(0);         // set alpha to zero to make it invisible
@@ -126,6 +126,17 @@ gameScene.create = function () {
     // set interactivity
     this.target.setInteractive();
     this.target.input.alwaysEnabled = true;     // needs to be true otherwise the pointerdown event will not fire if alpha is set to 0
+
+    // create tween
+    this.target.flashTween = this.tweens.add({
+        targets: this.target,
+        alpha: 1,
+        duration: 50,
+        paused: true,       // pause to be able to control the tween
+        yoyo: true,          // tween will go back to beginning state
+        ease: 'Quad.easeInQuad'  // easing function for smoother transition
+
+    });
 
     this.target.on('pointerdown', function (pointer) {
 
@@ -288,6 +299,12 @@ gameScene.hitTarget = function () {
     // check if it is the first target and then start the game (timer) and remove the start text
     if (this.state < 2) {
 
+        // flash camera
+        this.cameras.main.flash(100);
+
+        // play tween (flash target)
+        this.target.flashTween.play();
+
         // play sound
         this.soundHit.play();
 
@@ -317,20 +334,26 @@ gameScene.hitTarget = function () {
             return
         }
 
-        // calculate target size
-        let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
-        let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
+        this.target.flashTween.on('complete', function () {
 
-        // calculate new random position (in game coordinates)
-        this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
-        this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
+            // calculate target size
+            let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
+            let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
 
-        // set new position of the target (in canvas coordinates)
-        this.target.setPosition(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'));
+            // calculate new random position (in game coordinates)
+            this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
+            this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
 
-        // write new coordinates to text
-        this.xCoordText.setText(this.targetX);
-        this.yCoordText.setText(this.targetY);
+            // set new position of the target (in canvas coordinates)
+            this.target.setPosition(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'));
+
+            // write new coordinates to text
+            this.xCoordText.setText(this.targetX);
+            this.yCoordText.setText(this.targetY);
+
+
+        }, this);
+
     }
 }
 
@@ -338,6 +361,8 @@ gameScene.hitTarget = function () {
 gameScene.missTarget = function () {
 
     if (this.state == 1) {      // only register misses when the game started already
+
+        this.cameras.main.flash(100);   // flash
 
         // play sound
         this.soundMiss.play();
