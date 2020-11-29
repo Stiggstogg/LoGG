@@ -37,8 +37,6 @@ gameScene.init = function() {
 gameScene.preload = function () {
 
     // load images
-    this.load.image('target', 'assets/images/target.png');              // target image (1px, red)
-    this.load.image('background', 'assets/images/background.png');      // background image (10x10 px, black)
 
     // load audio
     this.load.audio('hit', 'assets/audio/PewBang.mp3');
@@ -49,19 +47,18 @@ gameScene.preload = function () {
 // create objects (executed once after preload())
 gameScene.create = function () {
 
-    // add background sprite (all black)
+    // set background zone (triggers a miss!)
     // ----------------------------------
 
     // create
-    this.bg = this.add.sprite(0, 0, 'background');
+    this.bgZone = this.add.zone(0, 0, this.gw, this.gh);
 
     // set properties
-    this.bg.setOrigin(0, 0);
-    this.bg.setScale(this.gw*0.1, this.gh*0.1);
+    this.bgZone.setOrigin(0, 0);
 
     // set interactivity
-    this.bg.setInteractive();
-    this.bg.on('pointerdown', function (pointer) {
+    this.bgZone.setInteractive();
+    this.bgZone.on('pointerdown', function (pointer) {
 
         this.missTarget();
 
@@ -71,22 +68,25 @@ gameScene.create = function () {
     // ---------------------
 
     // rectangle (border)
-    let rect = new Phaser.Geom.Rectangle(this.lineWidth*0.5, this.lineWidth*0.5, this.gw-this.lineWidth, this.gh-this.lineWidth); // x, y, width, height
-
-    let graphics = this.add.graphics({lineStyle: {width: this.lineWidth, color: this.lineColor }});  // create graphics object
-
-    graphics.strokeRectShape(rect);     // draw rectangle
+    let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
+    rect.setOrigin(0);
+    rect.setStrokeStyle(this.lineWidth*2, this.lineColor);   // lineWidth needs to be doubled as half of the line will be outside
 
     // lines
-    let vertLine = new Phaser.Geom.Line(this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh);
-    let horLine = new Phaser.Geom.Line(0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos);
+    let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.lineColor);
+    let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.lineColor);
 
-    graphics.strokeLineShape(vertLine);
-    graphics.strokeLineShape(horLine);
+    vertLine.setOrigin(0);
+    horLine.setOrigin(0);
+
+    vertLine.setLineWidth(this.lineWidth/2);    // lineWidth needs to be halfed as the width is added to both sides
+    horLine.setLineWidth(this.lineWidth/2);
+
 
     // add start text
     // ---------------------
-    let textStyleStart = {
+
+        let textStyleStart = {
         fontFamily: 'Courier',
         fontSize: '30px',
         color: '#27ff00',
@@ -111,22 +111,21 @@ gameScene.create = function () {
     this.startText2.setOrigin(0.5, 0);
 
 
-    // add target sprite
+    // add target (rectangle)
     // ---------------------
 
     // create
     this.targetX = 50;      // starting positions
     this.targetY = 50;
 
-    this.target = this.add.sprite(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'), 'target');
+    this.target = this.add.rectangle(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'), this.targetSize, this.targetSize, 0xffffff);
 
     // set properties
-    this.target.setOrigin(0.5, 0.5);
-    this.target.setScale(this.targetSize);
-    this.target.alpha = 0.0001;         // set alpha to very low so that target is not visible anymore (if it is 0 it is not interactive anymore!) TODO: Fix that!
+    this.target.setAlpha(0);         // set alpha to zero to make it invisible
 
     // set interactivity
     this.target.setInteractive();
+    this.target.input.alwaysEnabled = true;     // needs to be true otherwise the pointerdown event will not fire if alpha is set to 0
 
     this.target.on('pointerdown', function (pointer) {
 
@@ -180,9 +179,6 @@ gameScene.create = function () {
     this.hitRateText.setOrigin(1, 0);
     this.timeText = this.add.text(this.gw * xpos3, this.gh * (ypos2 + 2 * yspace) ,'00:00', textStyleNumbers);
     this.timeText.setOrigin(1, 0);
-
-
-    this.hitRateText.originX = 1;
 
     // add title text
     // --------------------
