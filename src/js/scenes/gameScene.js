@@ -36,12 +36,6 @@ gameScene.init = function() {
 // load assets (executed once after init() and before create())
 gameScene.preload = function () {
 
-    // load images
-
-    // load audio
-    this.load.audio('hit', 'assets/audio/PewBang.mp3');
-    this.load.audio('miss', 'assets/audio/Pew.mp3');
-
 };
 
 // create objects (executed once after preload())
@@ -109,7 +103,6 @@ gameScene.create = function () {
         textStyleStart);
     this.startText2.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
     this.startText2.setOrigin(0.5, 0);
-s
 
     // add target (rectangle)
     // ---------------------
@@ -426,20 +419,3 @@ gameScene.coordGameToCanvas = function (gameCoord, dim) {
     }
 
 };
-
-// set the configuration of the game
-let config = {
-    type: Phaser.AUTO, // Phaser will use WebGL if available, if not it uses the canvas
-    width: 1280,
-    height: 720,
-    scene: gameScene,
-    title: 'LIGHTs out GUN GAME',  // Shown in the console
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    },
-    pixelArt: false,   // if true pixel perfect rendering is used
-};
-
-// create a new game, pass the configuration
-let game = new Phaser.Game(config);
