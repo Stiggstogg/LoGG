@@ -419,3 +419,6 @@ gameScene.coordGameToCanvas = function (gameCoord, dim) {
     }
 
 };
+
+// export scene
+export default gameScene;

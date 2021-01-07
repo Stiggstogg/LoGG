@@ -17,3 +17,5 @@ bootScene.create = function () {
 
 };
 
+// export scene
+export default bootScene;

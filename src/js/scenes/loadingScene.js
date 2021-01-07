@@ -56,3 +56,7 @@ loadingScene.create = function () {
     this.scene.start('Home');
 
 };
+
+
+// export scene
+export default loadingScene;

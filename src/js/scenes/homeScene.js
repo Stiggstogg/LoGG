@@ -18,8 +18,6 @@ homeScene.create = function () {
     this.bgZone.setInteractive();
     this.bgZone.on('pointerdown', function (pointer) {
 
-        console.log('hey');
-
         this.scene.start('Game');
 
     }, this);
@@ -34,3 +32,7 @@ homeScene.create = function () {
     text.setOrigin(0.5, 0.5);
 
 };
+
+
+// export scene
+export default homeScene;
