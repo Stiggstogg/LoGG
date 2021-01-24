@@ -1,4 +1,5 @@
 // import scenes
+import 'phaser';
 import bootScene from './scenes/bootScene.js';
 import loadingScene from './scenes/loadingScene.js';
 import homeScene from './scenes/homeScene.js';
@@ -15,8 +16,9 @@ let config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    pixelArt: false,   // if true pixel perfect rendering is used
+    pixelArt: false,  // if true pixel perfect rendering is used
 };
+
 
 // create a new game, pass the configuration (from the config.js file)
 let game = new Phaser.Game(config);

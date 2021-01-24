@@ -1,38 +1,41 @@
 // "Home" scene: Shows the home screen of the game
-let homeScene = new Phaser.Scene('Home');
+export default class gameScene extends Phaser.Scene {
 
-// Shows the home screen and waits for the the user to start the game
-homeScene.create = function () {
+    constructor() {
+        super({
+            key: 'Home'
+        });
+    }
 
-    // get game width and height
-    let gw = this.sys.game.config.width;
-    let gh = this.sys.game.config.height;
+    // Shows the home screen and waits for the the user to start the game
+    create() {
 
-    // create background zone
-    this.bgZone = this.add.zone(0, 0, gw, gh);
+        // get game width and height
+        let gw = this.sys.game.config.width;
+        let gh = this.sys.game.config.height;
 
-    // set properties
-    this.bgZone.setOrigin(0, 0);
+        // create background zone
+        this.bgZone = this.add.zone(0, 0, gw, gh);
 
-    // set interactivity and start game scene when clicked
-    this.bgZone.setInteractive();
-    this.bgZone.on('pointerdown', function (pointer) {
+        // set properties
+        this.bgZone.setOrigin(0, 0);
 
-        this.scene.start('Game');
+        // set interactivity and start game scene when clicked
+        this.bgZone.setInteractive();
+        this.bgZone.on('pointerdown', function (pointer) {
 
-    }, this);
+            this.scene.start('Game');
 
-
-    // show home screen text
-    let text = this.add.text(gw / 2, gh / 2, 'Lights out Gun Game', {
-            font: '40px Arial',
-            fill: '#27ff00'
-        }
-    );
-    text.setOrigin(0.5, 0.5);
-
-};
+        }, this);
 
 
-// export scene
-export default homeScene;
+        // show home screen text
+        let text = this.add.text(gw / 2, gh / 2, 'Lights out Gun Game', {
+                font: '40px Arial',
+                fill: '#27ff00'
+            }
+        );
+        text.setOrigin(0.5, 0.5);
+    }
+
+}

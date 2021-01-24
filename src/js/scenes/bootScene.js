@@ -1,21 +1,25 @@
 // "Boot" scene: First scene, which is used to load basic (and small) assets for the "Loading" scene
-let bootScene = new Phaser.Scene('Boot');
+export default class bootScene extends Phaser.Scene {
 
-// load basic asset for "Loading" scene (e.g. logo), this asset should be small
-bootScene.preload = function () {
+    constructor() {
+        super({
+            key: 'Boot'
+        });
+    }
 
-    // load logo
-    this.load.image('logo', 'assets/images/logo.png');
+    // load basic asset for "Loading" scene (e.g. logo), this asset should be small
+    preload() {
 
+        // load logo
+        this.load.image('logo', 'assets/images/logo.png');
 
-};
+    }
 
-// change to "Loading" scene
-bootScene.create = function () {
+    // change to "Loading" scene
+    create() {
 
-    this.scene.start('Loading');
+        this.scene.start('Loading');
 
-};
+    }
 
-// export scene
-export default bootScene;
+}

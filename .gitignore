@@ -3,3 +3,4 @@
 /.idea/tasks.xml
 /.idea/*.iws
 /Resources/
+/node_modules/
