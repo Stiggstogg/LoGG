@@ -1,4 +1,8 @@
 // "Game" scene: This is the main scene of the game
+
+// imports
+import Target from '../objects/target.js'
+
 export default class gameScene extends Phaser.Scene {
 
     constructor() {
@@ -33,9 +37,6 @@ export default class gameScene extends Phaser.Scene {
         this.time = 0;              // time
         this.score = 0;             // score
 
-        // states
-        this.state = 0;             // state of the game: 0: starting, 1: playing, 2: end
-
     }
 
     // create objects (executed once after preload())
@@ -43,6 +44,8 @@ export default class gameScene extends Phaser.Scene {
 
         // set background zone (triggers a miss!)
         // ----------------------------------
+
+        // TODO: Replace by object
 
         // create
         this.bgZone = this.add.zone(0, 0, this.gw, this.gh);
@@ -61,6 +64,8 @@ export default class gameScene extends Phaser.Scene {
         // add lines
         // ---------------------
 
+        // TODO: Put in separate function
+
         // rectangle (border)
         let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
         rect.setOrigin(0);
@@ -76,71 +81,10 @@ export default class gameScene extends Phaser.Scene {
         vertLine.setLineWidth(this.lineWidth/2);    // lineWidth needs to be halfed as the width is added to both sides
         horLine.setLineWidth(this.lineWidth/2);
 
-
-        // add start text
-        // ---------------------
-
-        let textStyleStart = {
-            fontFamily: 'Courier',
-            fontSize: '30px',
-            color: '#27ff00',
-            align: 'center',
-        };
-
-        this.startText1 = this.add.text(this.coordGameToCanvas(50, 'x'),
-            this.coordGameToCanvas(95, 'y'),
-            'Welcome to "LIGHTs out GUN GAME" a gun game where you cannot see your shooting target.\n\n' +
-            'On the right you see the coordinates of the target in this area. ' +
-            'Position x: 0, y: 0 is on the bottom left of this area and x: 100, y: 100 on the top right.',
-            textStyleStart);
-        this.startText1.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
-        this.startText1.setOrigin(0.5, 0);
-
-        this.startText2 = this.add.text(this.coordGameToCanvas(50, 'x'),
-            this.coordGameToCanvas(30, 'y'),
-            'Shoot the first target to start the game! In total 26 targets, which appear on random positions, need to be shot.\n\n' +
-            'Press "SPACE" to hide the mouse cursor.',
-            textStyleStart);
-        this.startText2.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
-        this.startText2.setOrigin(0.5, 0);
-
         // add target (rectangle)
         // ---------------------
 
-        // create
-        this.targetX = 50;      // starting positions
-        this.targetY = 50;
-
-        this.target = this.add.rectangle(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'), this.targetSize, this.targetSize, this.lineColor);
-
-        // set properties
-        this.target.setAlpha(0.0001);         // set alpha to zero to make it invisible TODO: Change back to 0 as soon as Phaser Issue #5507 is fixed (https://github.com/photonstorm/phaser/issues/5507)
-
-        // set interactivity
-        this.target.setInteractive();
-        this.target.input.alwaysEnabled = true;     // needs to be true otherwise the pointerdown event will not fire if alpha is set to 0
-
-        // create tween
-        this.target.flashTween = this.tweens.add({
-            targets: this.target,
-            alpha: 1,
-            duration: 50,
-            paused: true,       // pause to be able to control the tween
-            yoyo: true,          // tween will go back to beginning state
-            ease: 'Quad.easeInQuad'  // easing function for smoother transition
-        });
-
-        this.target.on('pointerdown', function (pointer) {
-
-            this.hitTarget();
-
-        }, this);
-
-        console.log(this.target);
-        console.log(this.bgZone);
-
-        this.target.setDepth(-1);
-        this.bgZone.setDepth(10);
+        this.target = this.add.existing(new Target(this, 50, 50, this.targetSize, this.targetSize, this.lineColor));
 
         // add coordinates text (right pane)
         // ---------------------
@@ -235,6 +179,10 @@ export default class gameScene extends Phaser.Scene {
             this.titleText.push(this.add.text(titleStartPos*this.gw + i * titleSeparation*this.gw, this.gh * 0.06, title[i], this.titleStyle));
         }
 
+        // add tweens
+        // --------------------
+        this.addTweens();
+
         // Audio
         // --------------------
 
@@ -291,76 +239,12 @@ export default class gameScene extends Phaser.Scene {
 
     }
 
-    // function which defines what happens when the target is hit
-    hitTarget() {
-
-        // check if it is the first target and then start the game (timer) and remove the start text
-        if (this.state < 2) {
-
-            // flash camera
-            this.cameras.main.flash(100);
-
-            // play tween (flash target)
-            this.target.flashTween.play();
-
-            // play sound
-            this.soundHit.play();
-
-            // add hit to counter, change hits and hit rate
-            this.hits++;
-            this.hitText.setText(this.hits);
-            this.hitRateCalc();
-
-            // change background color of the corresponding letter in the title (omit spaces)
-            this.titleText[this.titleCharacterPos[this.hits - 1]].setBackgroundColor('#ff00ae');
-
-            if (this.state == 0) {
-                // change state
-                this.state = 1;
-
-                // remove start text
-                this.startText1.destroy();
-                this.startText2.destroy();
-
-                // set start time
-                this.startTime = new Date();
-            }
-
-            // check if game is finished and change state
-            if (this.hits == this.titleCharacterPos.length) {
-                this.gameFinished();
-                return
-            }
-
-            this.target.flashTween.on('complete', function () {
-
-                // calculate target size
-                let targetSizeGameX = this.targetSize / (this.gw * this.vertLinePos - 1.5 * this.lineWidth) * 100;
-                let targetSizeGameY = this.targetSize / (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth) * 100;
-
-                // calculate new random position (in game coordinates)
-                this.targetX = Phaser.Math.Between(targetSizeGameX / 2, 100 - targetSizeGameX / 2);
-                this.targetY = Phaser.Math.Between(targetSizeGameY / 2, 100 - targetSizeGameY / 2);
-
-                // set new position of the target (in canvas coordinates)
-                this.target.setPosition(this.coordGameToCanvas(this.targetX,'x'), this.coordGameToCanvas(this.targetY, 'y'));
-
-                // write new coordinates to text
-                this.xCoordText.setText(this.targetX);
-                this.yCoordText.setText(this.targetY);
-
-
-            }, this);
-
-        }
-    }
-
     // function which defines what happens when a target is missed
     missTarget() {
 
         if (this.state == 1) {      // only register misses when the game started already
 
-            this.cameras.main.flash(100);   // flash
+            this.flashCamera();   // flash
 
             // play sound
             this.soundMiss.play();
@@ -376,7 +260,7 @@ export default class gameScene extends Phaser.Scene {
 
     // calculate and change hit rate
     hitRateCalc() {
-        this.hitRate = this.hits / (this.hits + this.misses) * 100;
+        this.hitRate = this.target.counter / (this.target.counter + this.misses) * 100;
         this.hitRateText.setText(this.hitRate.toFixed(0) + ' %');
     }
 
@@ -411,14 +295,61 @@ export default class gameScene extends Phaser.Scene {
 
     }
 
-    // calculates from game coordinates (area on which can be shot) to the real coordinates in the canvas
-    coordGameToCanvas(gameCoord, dim) {
-        if (dim === 'x') {
-            return this.lineWidth + gameCoord / 100 * (this.gw * this.vertLinePos - 1.5 * this.lineWidth);
-        }
-        else if (dim === 'y') {
-            return this.gh * this.horLinePos + this.lineWidth * 0.5 + (100 - gameCoord) / 100 * (this.gh * (1 - this.horLinePos) - 1.5 * this.lineWidth);
-        }
+    // adds all tweens to the scene
+    addTweens() {
+
+        // flash tween of the target
+        this.flashTargetTween = this.tweens.add({
+            targets: this.target,
+            alpha: 1,
+            duration: 50,
+            paused: true,       // pause to be able to control the tween
+            yoyo: true,          // tween will go back to beginning state
+            ease: 'Quad.easeInQuad'  // easing function for smoother transition
+        });
+
+        // create a new target when the tween is completed
+        this.flashTargetTween.on('complete', function () { this.target.newTarget() }, this);
+
     }
+
+    // camera flash
+    flashCamera() {
+        this.cameras.main.flash(100);
+    }
+
+    // actions which happen on the scene when the target is hit
+    hitTarget(hitCounter) {
+
+        // flash camera
+        this.flashCamera();
+
+        // play tween (flash target)
+        this.flashTargetTween.play();
+
+        // play sound
+        this.soundHit.play();
+
+        // set hit texts
+        this.hitText.setText(hitCounter);
+        this.hitRateCalc();
+
+        // change background color of the corresponding letter in the title (omit spaces)
+        this.titleText[this.titleCharacterPos[hitCounter - 1]].setBackgroundColor('#ff00ae');
+
+        // if it is the first hit, start the timer
+        if (hitCounter == 1) {
+
+            // set start time
+            this.scene.startTime = new Date();
+        }
+
+        // check if game is finished and change state
+        if (hitCounter === this.titleCharacterPos.length) {
+            this.gameFinished();
+        }
+
+    }
+
 
 }
