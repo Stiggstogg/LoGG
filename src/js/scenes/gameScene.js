@@ -14,6 +14,9 @@ export default class gameScene extends Phaser.Scene {
     // initiate scene parameters
     init() {
 
+        // title in the game scene
+        this.title = '200 Episodes Light Gun Reviews';
+
         // get game width and height
         this.gw = this.sys.game.config.width;
         this.gh = this.sys.game.config.height;
@@ -29,9 +32,10 @@ export default class gameScene extends Phaser.Scene {
 
         // target properties
         this.targetSize = 100;      // size of the target
+        this.xFirst = 50;           // x coordinate of the first target
+        this.yFirst = 50;           // y coordinate of the first target
 
         // numbers for scores
-        this.hits = 0;              // number of hits
         this.misses = 0;            // number of misses
         this.hitRate = 0;           // hit rate
         this.time = 0;              // time
@@ -55,129 +59,19 @@ export default class gameScene extends Phaser.Scene {
 
         // set interactivity
         this.bgZone.setInteractive();
-        this.bgZone.on('pointerdown', function (pointer) {
+        this.bgZone.on('pointerdown', function () {
 
             this.missTarget();
 
         }, this);
 
-        // add lines
-        // ---------------------
+        // setup of the game objects
+        this.gameArea = this.addLines();    // add lines and get game area (shooting area)
+        this.addTextTitle();                // add title text ('200 Episodes Light Gun Reviews')
+        this.addTextStats();                // add the stats text on the
 
-        // TODO: Put in separate function
+        this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize, this.lineColor, this.gameArea));
 
-        // rectangle (border)
-        let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
-        rect.setOrigin(0);
-        rect.setStrokeStyle(this.lineWidth*2, this.lineColor);   // lineWidth needs to be doubled as half of the line will be outside
-
-        // lines
-        let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.lineColor);
-        let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.lineColor);
-
-        vertLine.setOrigin(0);
-        horLine.setOrigin(0);
-
-        vertLine.setLineWidth(this.lineWidth/2);    // lineWidth needs to be halfed as the width is added to both sides
-        horLine.setLineWidth(this.lineWidth/2);
-
-        // add target (rectangle)
-        // ---------------------
-
-        this.target = this.add.existing(new Target(this, 50, 50, this.targetSize, this.targetSize, this.lineColor));
-
-        // add coordinates text (right pane)
-        // ---------------------
-
-        // x and y position of the texts (relative to game width and height) and vertical spaces
-        let xpos1 = 0.82;
-        let xpos2 = 0.95;           // positions of the coordinates (right aligned)
-        let xpos3 = 0.99;           // positions of the numbers (right aligned)
-        let ypos1 = 0.30;
-        let yspace = 0.05;
-        let ypos2 = ypos1 + 6 * yspace;
-
-
-        // define text style
-        let textStyleCoord = {
-            fontFamily: 'Courier',
-            fontSize: '50px',
-            color: '#27ff00'
-        };
-
-        this.add.text(this.gw * xpos1, this.gh * ypos1 ,'x:', textStyleCoord);
-        this.add.text(this.gw * xpos1, this.gh * (ypos1 + 2 * yspace) ,'y:', textStyleCoord);
-
-        this.xCoordText = this.add.text(this.gw * xpos2, this.gh * ypos1, this.targetX, textStyleCoord);
-        this.xCoordText.setOrigin(1, 0);
-        this.yCoordText = this.add.text(this.gw * xpos2, this.gh * (ypos1 + 2 * yspace), this.targetY, textStyleCoord);
-        this.yCoordText.setOrigin(1, 0);
-
-        // add hits, hit rate and time
-        let textStyleNumbers = {
-            fontFamily: 'Courier',
-            fontSize: '23px',
-            color: '#27ff00',
-        };
-
-        // names
-        this.add.text(this.gw * xpos1, this.gh * ypos2 ,'Hits:', textStyleNumbers);
-        this.add.text(this.gw * xpos1, this.gh * (ypos2 + yspace) ,'Hit Rate:', textStyleNumbers);
-        this.add.text(this.gw * xpos1, this.gh * (ypos2 + 2 * yspace) ,'Time:', textStyleNumbers);
-
-        // numbers
-        this.hitText = this.add.text(this.gw * xpos3, this.gh * ypos2 ,'0', textStyleNumbers);
-        this.hitText.setOrigin(1, 0);
-        this.hitRateText = this.add.text(this.gw * xpos3, this.gh * (ypos2 + yspace) ,'- %', textStyleNumbers);
-        this.hitRateText.setOrigin(1, 0);
-        this.timeText = this.add.text(this.gw * xpos3, this.gh * (ypos2 + 2 * yspace) ,'00:00', textStyleNumbers);
-        this.timeText.setOrigin(1, 0);
-
-        // add title text
-        // --------------------
-
-        // text style and position
-        this.titleStyle = {
-            fontFamily: 'Courier',
-            fontSize: '60px',
-            color: '#27ff00',
-            fontStyle: 'bold'
-        };
-
-        this.titleStyleShot = {             // style of the title when scored
-            fontFamily: 'Courier',
-            fontSize: '60px',
-            color: '#27ff00',
-            fontStyle: 'bold',
-            backgroundColor: '#FF00AE'
-        }
-
-        let titleStartPos = 0.043;    // x start position of the title (relative to game width)
-        let titleSeparation = 0.03; // separation between the letter (relative to game width)
-
-        // create title text array
-        let title = ['2', '0', '0', ' ',
-            'E', 'p', 'i', 's', 'o', 'd', 'e', 's', ' ',
-            'L', 'i', 'g', 'h', 't', ' ',
-            'G', 'u', 'n', ' ',
-            'R', 'e', 'v', 'i', 'e', 'w', 's'
-        ];
-
-        // get positions which contain a character (not spaces)
-        this.titleCharacterPos = []
-
-        for (let i = 0; i < title.length; i++) {
-            if (title[i] !== ' ') {
-                this.titleCharacterPos.push(i);
-            }
-        }
-
-        this.titleText = [];
-
-        // add all texts
-        for (let i = 0; i < title.length; i++) {
-            this.titleText.push(this.add.text(titleStartPos*this.gw + i * titleSeparation*this.gw, this.gh * 0.06, title[i], this.titleStyle));
-        }
 
         // add tweens
         // --------------------
@@ -193,7 +87,7 @@ export default class gameScene extends Phaser.Scene {
         // --------------------
 
         this.keySpace = this.input.keyboard.addKey('Space');
-        this.keySpace.on('down', function (event) {
+        this.keySpace.on('down', function () {
 
             if (this.cursorHide) {
                 this.input.setDefaultCursor('default');
@@ -210,31 +104,42 @@ export default class gameScene extends Phaser.Scene {
     // update method
     update(time, delta) {
 
-        // update timer
-        if (this.state == 1) {
-            let now = new Date();
-            let diff = now - this.startTime;        // difference in milli seconds
+        // set timer
+        let now = new Date();                               // current time
+        let diff = now - this.startTime;                    // difference to start time in milli seconds
+        if (this.target.counter > 0) {                      // change the time text if the first target was shot
+            this.timeText.setText(this.convertTime(diff));  // convert time to string and set timer text
+        }
+    }
 
-            let mm = Math.floor(diff / 1000 / 60);  // minutes part of the difference
-            let ss = diff / 1000 - mm * 60;             // seconds part of the difference
+    // actions which happen on the scene when the target is hit
+    hitTarget(hitCounter) {
 
-            let mmDisplay;
-            let ssDisplay;
+        // if it is the first hit, start the timer
+        if (hitCounter === 1) {
+            this.startTime = new Date();    // set start time
+        }
 
-            // add 0 as prefix if numbers are smaller then 10
-            if (mm < 10) {
-                mmDisplay = '0' + mm.toFixed(0);
-            } else {
-                mmDisplay = mm.toFixed(0);
-            }
+        // animations (tweens and sounds)
+        this.cameras.main.flash(100);   // flash camera
+        this.flashTargetTween.play();           // flash target
+        this.soundHit.play();                   // play sound
 
-            if (Math.round(ss) < 10) {
-                ssDisplay = '0' + ss.toFixed(0);
-            } else {
-                ssDisplay = ss.toFixed(0);
-            }
+        // calculate coordinates of the new target
+        this.target.setNewTarget();
 
-            this.timeText.setText(mmDisplay + ':' + ssDisplay);      // set timer text
+        // adapt texts
+        this.hitText.setText(hitCounter);               // hit counter text
+        this.hitRateCalc();                             // calculate and change hit rate text
+        this.xCoordText.setText(this.target.xGame);     // coordinates for the next target
+        this.yCoordText.setText(this.target.yGame);     // coordinates for the next target
+
+        // change background color of the corresponding letter in the title
+        this.titleText[hitCounter - 1].setBackgroundColor('#ff00ae');
+
+        // check if game is finished and change state
+        if (hitCounter === this.titleText.length) {
+            this.gameFinished();
         }
 
     }
@@ -256,12 +161,6 @@ export default class gameScene extends Phaser.Scene {
         else if (this.state == 2) {
             this.scene.restart();
         }
-    }
-
-    // calculate and change hit rate
-    hitRateCalc() {
-        this.hitRate = this.target.counter / (this.target.counter + this.misses) * 100;
-        this.hitRateText.setText(this.hitRate.toFixed(0) + ' %');
     }
 
     // final screen
@@ -309,47 +208,137 @@ export default class gameScene extends Phaser.Scene {
         });
 
         // create a new target when the tween is completed
-        this.flashTargetTween.on('complete', function () { this.target.newTarget() }, this);
+        this.flashTargetTween.on('complete', function () {
+            this.target.placeNewTarget()
+        }, this);
 
     }
 
-    // camera flash
-    flashCamera() {
-        this.cameras.main.flash(100);
+    // Add lines to the screen
+    addLines() {
+
+        // rectangle (border)
+        let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
+        rect.setOrigin(0);
+        rect.setStrokeStyle(this.lineWidth*2, this.lineColor);   // lineWidth needs to be doubled as half of the line will be outside
+
+        // lines
+        let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.lineColor);
+        let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.lineColor);
+
+        vertLine.setOrigin(0);
+        horLine.setOrigin(0);
+
+        vertLine.setLineWidth(this.lineWidth/2);    // lineWidth needs to be halfed as the width is added to both sides
+        horLine.setLineWidth(this.lineWidth/2);
+
+        // calculate game area (shooting area) origin (top left) and size
+        let gameArea = {};
+        gameArea.x = this.lineWidth;
+        gameArea.y = this.gh * this.horLinePos + this.lineWidth/2;
+        gameArea.width = (this.gw * this.vertLinePos - this.lineWidth/2) - this.lineWidth;
+        gameArea.height = (this.gh - this.lineWidth) - (this.gh * this.horLinePos + this.lineWidth/2);
+
+        return gameArea;
+
     }
 
-    // actions which happen on the scene when the target is hit
-    hitTarget(hitCounter) {
+    // Add title text
+    addTextTitle() {
 
-        // flash camera
-        this.flashCamera();
+        // Create title text array, style and set position
+        this.titleText = [];            // title text array
+        let titleStyle = {fontFamily: 'Courier', fontSize: '60px', color: '#27ff00', fontStyle: 'bold'};
+        let titleStartPos = 0.043;      // x start position of the title (relative to game width)
+        let titleSeparation = 0.03;     // separation between the letter (relative to game width)
 
-        // play tween (flash target)
-        this.flashTargetTween.play();
-
-        // play sound
-        this.soundHit.play();
-
-        // set hit texts
-        this.hitText.setText(hitCounter);
-        this.hitRateCalc();
-
-        // change background color of the corresponding letter in the title (omit spaces)
-        this.titleText[this.titleCharacterPos[hitCounter - 1]].setBackgroundColor('#ff00ae');
-
-        // if it is the first hit, start the timer
-        if (hitCounter == 1) {
-
-            // set start time
-            this.scene.startTime = new Date();
+        // add all letters (as separate texts) to the scene (spaces are skipped!)
+        for (let i = 0; i < this.title.length; i++) {
+            if (this.title[i] !== ' ') {                // skip spaces
+                this.titleText.push(                    // put all texts in an array so that they can be changed later (change background when target is hit)
+                    this.add.text(titleStartPos * this.gw + i * titleSeparation * this.gw,
+                    this.gh * 0.06,
+                    this.title[i],
+                    titleStyle));
+            }
         }
 
-        // check if game is finished and change state
-        if (hitCounter === this.titleCharacterPos.length) {
-            this.gameFinished();
-        }
+    }
+
+    // Add stats text (on the right pane)
+    addTextStats() {
+
+        // x and y position of the texts and vertical spaces (all relative to game width and height)
+        let xPos = [0.82, 0.95, 0.99];          // x positions: 0: names (left aligned), 1: coordinates (right aligned), 2: stats (right aligned)
+        let ySpace = 0.05;                      // vertical space between the different texts
+        let yPos = [0.30];                      // y positions: 0: position of first coordinate (x), 1: position of first stat text (hits)
+        yPos.push(yPos[0] + 6 * ySpace);
+
+        // coordinates (x and y)
+        // ---------------------
+
+        let textStyle = {fontFamily: 'Courier', fontSize: '50px', color: '#27ff00'};    // text style
+
+        // names
+        this.add.text(this.gw * xPos[0], this.gh * yPos[0] ,'x:', textStyle);
+        this.add.text(this.gw * xPos[0], this.gh * (yPos[0] + 2 * ySpace) ,'y:', textStyle);
+
+        // values
+        this.xCoordText = this.add.text(this.gw * xPos[1], this.gh * yPos[0], this.xFirst, textStyle);    // x
+        this.xCoordText.setOrigin(1, 0);        // right aligned
+        this.yCoordText = this.add.text(this.gw * xPos[1], this.gh * (yPos[0] + 2 * ySpace), this.yFirst, textStyle); // y
+        this.yCoordText.setOrigin(1, 0);        // right aligned
+
+        // stats (hits, hit rate and time)
+        // --------------------------------
+
+        textStyle.fontSize = '23px';        // text style (same as coordinates, but smaller)
+
+        // names
+        this.add.text(this.gw * xPos[0], this.gh * yPos[1] ,'Hits:', textStyle);
+        this.add.text(this.gw * xPos[0], this.gh * (yPos[1] + ySpace) ,'Hit Rate:', textStyle);
+        this.add.text(this.gw * xPos[0], this.gh * (yPos[1] + 2 * ySpace) ,'Time:', textStyle);
+
+        // values
+        this.hitText = this.add.text(this.gw * xPos[2], this.gh * yPos[1] ,'0', textStyle);  // hits
+        this.hitText.setOrigin(1, 0);       // right aligned
+        this.hitRateText = this.add.text(this.gw * xPos[2], this.gh * (yPos[1] + ySpace) ,'- %', textStyle); // hit rate
+        this.hitRateText.setOrigin(1, 0);   // right aligned
+        this.timeText = this.add.text(this.gw * xPos[2], this.gh * (yPos[1] + 2 * ySpace) ,'00:00', textStyle);  // time
+        this.timeText.setOrigin(1, 0);  // right aligned
 
     }
 
+    // calculate and change hit rate
+    hitRateCalc() {
+        this.hitRate = this.target.counter / (this.target.counter + this.misses) * 100;
+        this.hitRateText.setText(this.hitRate.toFixed(0) + ' %');
+    }
+
+    // convert time in ms to string in mm:ss format
+    convertTime(time) {
+
+        let mm = Math.floor(time / 1000 / 60);  // minutes part of the time
+        let ss = time / 1000 - mm * 60;             // seconds part of the time
+
+        let mmDisplay;
+        let ssDisplay;
+
+        // add 0 as prefix if numbers are smaller then 10
+        if (mm < 10) {
+            mmDisplay = '0' + mm.toFixed(0);
+        } else {
+            mmDisplay = mm.toFixed(0);
+        }
+
+        if (Math.round(ss) < 10) {
+            ssDisplay = '0' + ss.toFixed(0);
+        } else {
+            ssDisplay = ss.toFixed(0);
+        }
+
+        return mmDisplay + ':' + ssDisplay;
+
+    }
 
 }
