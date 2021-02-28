@@ -1,6 +1,7 @@
 // "Game" scene: This is the main scene of the game
 
 // imports
+import Background from '../objects/background.js'
 import Target from '../objects/target.js'
 
 export default class gameScene extends Phaser.Scene {
@@ -24,9 +25,15 @@ export default class gameScene extends Phaser.Scene {
         // is cursors hidden
         this.cursorHide = false;
 
+        // text and line properties
+        this.properties = {
+            color1: 0x27ff00,       // color as hex number
+            color2: '#27ff00',      // the same color as above as string
+            font: 'Courier'         // font
+        };
+
         // line properties
         this.lineWidth = 5;         // width of the lines (in px)
-        this.lineColor = 0x27ff00;  // colors of the lines
         this.vertLinePos = 0.8;     // relative y position of the vertical line (above is the title) (relative to game height)
         this.horLinePos = 0.2;      // relative x position of the horizontal line (to the left the coordinates are shown) (relative to game width)
 
@@ -35,58 +42,36 @@ export default class gameScene extends Phaser.Scene {
         this.xFirst = 50;           // x coordinate of the first target
         this.yFirst = 50;           // y coordinate of the first target
 
-        // numbers for scores
-        this.misses = 0;            // number of misses
-        this.hitRate = 0;           // hit rate
-        this.time = 0;              // time
-        this.score = 0;             // score
+        // numbers for calculating the score
+        this.finalPerformance = {
+            hits: 0,                // hits
+            hitRate: 0,             // hit rate
+            time: 0                 // time
+        }
 
     }
 
     // create objects (executed once after preload())
     create() {
 
-        // set background zone (triggers a miss!)
-        // ----------------------------------
-
-        // TODO: Replace by object
-
-        // create
-        this.bgZone = this.add.zone(0, 0, this.gw, this.gh);
-
-        // set properties
-        this.bgZone.setOrigin(0, 0);
-
-        // set interactivity
-        this.bgZone.setInteractive();
-        this.bgZone.on('pointerdown', function () {
-
-            this.missTarget();
-
-        }, this);
-
-        // setup of the game objects
+        // setup of the game objects (non-interactive)
         this.gameArea = this.addLines();    // add lines and get game area (shooting area)
-        this.addTextTitle();                // add title text ('200 Episodes Light Gun Reviews')
-        this.addTextStats();                // add the stats text on the
+        this.addTextTitle();                // add title text on the top pane ('200 Episodes Light Gun Reviews')
+        this.addTextStats();                // add the stats text on the right pane
 
-        this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize, this.lineColor, this.gameArea));
-
+        // setup of interactive objects
+        this.background = this.add.existing(new Background(this, 0, 0, this.gw, this.gh));  // background (registers misses)
+        this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize, this.properties.color1, this.gameArea)); // target to shoot on
 
         // add tweens
-        // --------------------
         this.addTweens();
 
         // Audio
-        // --------------------
-
         this.soundHit = this.sound.add('hit');
         this.soundMiss = this.sound.add('miss');
 
         // keyboard events
-        // --------------------
-
-        this.keySpace = this.input.keyboard.addKey('Space');
+        this.keySpace = this.input.keyboard.addKey('Space');    // hide cursor
         this.keySpace.on('down', function () {
 
             if (this.cursorHide) {
@@ -107,7 +92,7 @@ export default class gameScene extends Phaser.Scene {
         // set timer
         let now = new Date();                               // current time
         let diff = now - this.startTime;                    // difference to start time in milli seconds
-        if (this.target.counter > 0) {                      // change the time text if the first target was shot
+        if (this.target.counter > 0 && this.target.counter < this.titleText.length) {                      // change the time text if the first target was shot and stop when the last target was shot. The final time is added in finishGame()
             this.timeText.setText(this.convertTime(diff));  // convert time to string and set timer text
         }
     }
@@ -121,7 +106,7 @@ export default class gameScene extends Phaser.Scene {
         }
 
         // animations (tweens and sounds)
-        this.cameras.main.flash(100);   // flash camera
+        this.flashCamera();                     // flash camera
         this.flashTargetTween.play();           // flash target
         this.soundHit.play();                   // play sound
 
@@ -147,50 +132,37 @@ export default class gameScene extends Phaser.Scene {
     // function which defines what happens when a target is missed
     missTarget() {
 
-        if (this.state == 1) {      // only register misses when the game started already
+        // animations (tweens and sounds)
+        this.flashCamera();     // camera flash
+        this.soundMiss.play();  // miss sound
 
-            this.flashCamera();   // flash
+        // adapt texts
+        this.hitRateCalc();
 
-            // play sound
-            this.soundMiss.play();
-
-            // add one to the number of misses and recalculate (and update) hit rate
-            this.misses++;
-            this.hitRateCalc();
-        }
-        else if (this.state == 2) {
-            this.scene.restart();
-        }
     }
 
     // final screen
     gameFinished() {
 
-        // set state to finished
-        this.state = 2;
-
-        // set final time and calculate score
+        // set final time and record scores
         let now = new Date();
-        this.time = (now - this.startTime) / 1000;
-        this.score = this.hitRate / this.time * 2000;
+        this.finalPerformance.time = (now - this.startTime) / 1000;     // calculate time needed (in s)
+        this.finalPerformance.hits = this.target.counter;               // get the number of hits
+        this.finalPerformance.hitRate = this.hitRateCalc();             // get the hit rate
 
-        // destroy the target
+        // update the time display with the final time
+        this.timeText.setText(this.convertTime(this.finalPerformance.time * 1000));
+
+        // destroy the interactive objects
         this.target.destroy();
+        this.background.destroy();
 
-        // show final text
-        let textStyleEnd = {
-            fontFamily: 'Courier',
-            fontSize: '30px',
-            color: '#27ff00',
-            align: 'center',
-        };
-
-        this.startEndText = this.add.text(this.coordGameToCanvas(50, 'x'),
-            this.coordGameToCanvas(95, 'y'),
-            'The game is finished!\n\nYour score is: ' + this.score.toFixed(0) + '\n\n\n\nShoot to restart the game!',
-            textStyleEnd);
-        this.startEndText.setWordWrapWidth(this.gw * this.vertLinePos * 0.8);
-        this.startEndText.setOrigin(0.5, 0);
+        // start finishing scene (in parallel)
+        this.scene.launch('Finish', {
+            performance: this.finalPerformance,
+            properties: this.properties,
+            area: this.gameArea
+        });
 
     }
 
@@ -214,17 +186,22 @@ export default class gameScene extends Phaser.Scene {
 
     }
 
+    // flash camera (when shooting)
+    flashCamera() {
+        this.cameras.main.flash(100);
+    }
+
     // Add lines to the screen
     addLines() {
 
         // rectangle (border)
         let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
         rect.setOrigin(0);
-        rect.setStrokeStyle(this.lineWidth*2, this.lineColor);   // lineWidth needs to be doubled as half of the line will be outside
+        rect.setStrokeStyle(this.lineWidth*2, this.properties.color1);   // lineWidth needs to be doubled as half of the line will be outside
 
         // lines
-        let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.lineColor);
-        let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.lineColor);
+        let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.properties.color1);
+        let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.properties.color1);
 
         vertLine.setOrigin(0);
         horLine.setOrigin(0);
@@ -248,7 +225,7 @@ export default class gameScene extends Phaser.Scene {
 
         // Create title text array, style and set position
         this.titleText = [];            // title text array
-        let titleStyle = {fontFamily: 'Courier', fontSize: '60px', color: '#27ff00', fontStyle: 'bold'};
+        let titleStyle = {fontFamily: this.properties.font, fontSize: '60px', color: this.properties.color2, fontStyle: 'bold'};
         let titleStartPos = 0.043;      // x start position of the title (relative to game width)
         let titleSeparation = 0.03;     // separation between the letter (relative to game width)
 
@@ -277,7 +254,7 @@ export default class gameScene extends Phaser.Scene {
         // coordinates (x and y)
         // ---------------------
 
-        let textStyle = {fontFamily: 'Courier', fontSize: '50px', color: '#27ff00'};    // text style
+        let textStyle = {fontFamily: this.properties.font, fontSize: '50px', color: this.properties.color2};    // text style
 
         // names
         this.add.text(this.gw * xPos[0], this.gh * yPos[0] ,'x:', textStyle);
@@ -311,8 +288,16 @@ export default class gameScene extends Phaser.Scene {
 
     // calculate and change hit rate
     hitRateCalc() {
-        this.hitRate = this.target.counter / (this.target.counter + this.misses) * 100;
-        this.hitRateText.setText(this.hitRate.toFixed(0) + ' %');
+
+        if (this.target.counter > 0) {      // only change the hit rate text when the game started (after the first target was hit)
+            let hitRate = this.target.counter / (this.target.counter + this.background.counter) * 100;        // calculate new hit rate
+            this.hitRateText.setText(hitRate.toFixed(0) + ' %');                               // set the hit rate text
+            return hitRate
+        }
+        else {
+            return 0;
+        }
+
     }
 
     // convert time in ms to string in mm:ss format

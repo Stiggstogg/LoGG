@@ -4,13 +4,14 @@ import bootScene from './scenes/bootScene.js';
 import loadingScene from './scenes/loadingScene.js';
 import homeScene from './scenes/homeScene.js';
 import gameScene from './scenes/gameScene.js';
+import finishScene from './scenes/finishScene.js';
 
 // set the configuration of the game
 let config = {
     type: Phaser.AUTO, // Phaser will use WebGL if available, if not it uses the canvas
     width: 1280,
     height: 720,
-    scene: [bootScene, loadingScene, homeScene, gameScene],
+    scene: [bootScene, loadingScene, homeScene, gameScene, finishScene],
     title: 'LIGHTs out GUN GAME',  // Shown in the console
     scale: {
         mode: Phaser.Scale.FIT,
