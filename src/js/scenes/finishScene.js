@@ -45,8 +45,6 @@ export default class finishScene extends Phaser.Scene {
             this.scene.start('Home');   // start home scene
             }, this);
 
-
-        // this.score.toFixed(0)
     }
 
     // calculate scores
@@ -60,6 +58,5 @@ export default class finishScene extends Phaser.Scene {
         return scr.toFixed(0);
 
     }
-
 
 }

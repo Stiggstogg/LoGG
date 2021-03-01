@@ -16,13 +16,13 @@ export default class Background extends Phaser.GameObjects.Zone {
        this.setInteractive();
 
         // add events (event when clicked)
-        this.on('pointerdown', function () { this.miss(this.scene) });
+        this.on('pointerdown', function (pointer) { this.miss(this.scene, pointer) });
 
 
     }
 
     // miss was registered
-    miss(scene) {
+    miss(scene, pointer) {
 
         // add miss to counter (only if the first target was already hit)
         if (scene.target.counter > 0) {
@@ -30,7 +30,7 @@ export default class Background extends Phaser.GameObjects.Zone {
         }
 
         // actions on scene
-        scene.missTarget();
+        scene.missTarget(pointer);
 
     }
 

@@ -3,6 +3,8 @@
 // imports
 import Background from '../objects/background.js'
 import Target from '../objects/target.js'
+import Miss from '../objects/miss.js'
+import Gun from '../objects/gun.js'
 
 export default class gameScene extends Phaser.Scene {
 
@@ -32,6 +34,11 @@ export default class gameScene extends Phaser.Scene {
             font: 'Courier'         // font
         };
 
+        // Gun properties
+        this.shootSpeed = 50;       // time between shots in ms
+        this.reloadSpeed = 1000;    // reloading speed
+        this.capacity = 5;          // gun capacity
+
         // line properties
         this.lineWidth = 5;         // width of the lines (in px)
         this.vertLinePos = 0.8;     // relative y position of the vertical line (above is the title) (relative to game height)
@@ -41,6 +48,9 @@ export default class gameScene extends Phaser.Scene {
         this.targetSize = 100;      // size of the target
         this.xFirst = 50;           // x coordinate of the first target
         this.yFirst = 50;           // y coordinate of the first target
+
+        // miss marker properties
+        this.missSize = 20;
 
         // numbers for calculating the score
         this.finalPerformance = {
@@ -59,12 +69,15 @@ export default class gameScene extends Phaser.Scene {
         this.addTextTitle();                // add title text on the top pane ('200 Episodes Light Gun Reviews')
         this.addTextStats();                // add the stats text on the right pane
 
+        // setup various objects
+        this.miss = this.add.existing(new Miss(this, 0, 0, this.missSize, this.properties.color1));     // miss object which shows the impact of the missed shots
+        this.gun = new Gun(this, this.shootSpeed, this.reloadSpeed, this.capacity);                           // gun object which manages the gun
+
         // setup of interactive objects
         this.background = this.add.existing(new Background(this, 0, 0, this.gw, this.gh));  // background (registers misses)
         this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize, this.properties.color1, this.gameArea)); // target to shoot on
 
-        // add tweens
-        this.addTweens();
+
 
         // Audio
         this.soundHit = this.sound.add('hit');
@@ -107,7 +120,6 @@ export default class gameScene extends Phaser.Scene {
 
         // animations (tweens and sounds)
         this.flashCamera();                     // flash camera
-        this.flashTargetTween.play();           // flash target
         this.soundHit.play();                   // play sound
 
         // calculate coordinates of the new target
@@ -130,11 +142,14 @@ export default class gameScene extends Phaser.Scene {
     }
 
     // function which defines what happens when a target is missed
-    missTarget() {
+    missTarget(pointer) {
+
+        this.gun.shoot();
 
         // animations (tweens and sounds)
-        this.flashCamera();     // camera flash
-        this.soundMiss.play();  // miss sound
+        this.flashCamera();                     // camera flash
+        this.soundMiss.play();                  // miss sound
+        this.miss.show(pointer.x, pointer.y);   // show where the shot was hit (show impact)
 
         // adapt texts
         this.hitRateCalc();
@@ -163,26 +178,6 @@ export default class gameScene extends Phaser.Scene {
             properties: this.properties,
             area: this.gameArea
         });
-
-    }
-
-    // adds all tweens to the scene
-    addTweens() {
-
-        // flash tween of the target
-        this.flashTargetTween = this.tweens.add({
-            targets: this.target,
-            alpha: 1,
-            duration: 50,
-            paused: true,       // pause to be able to control the tween
-            yoyo: true,          // tween will go back to beginning state
-            ease: 'Quad.easeInQuad'  // easing function for smoother transition
-        });
-
-        // create a new target when the tween is completed
-        this.flashTargetTween.on('complete', function () {
-            this.target.placeNewTarget()
-        }, this);
 
     }
 
