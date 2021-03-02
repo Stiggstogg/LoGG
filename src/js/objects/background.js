@@ -2,9 +2,12 @@
 
 export default class Background extends Phaser.GameObjects.Zone {
 
-    constructor(scene, x, y, width, height) {
+    constructor(scene, x, y, width, height, gun) {
 
         super(scene, x, y, width, height);
+
+        // gun
+        this.gun = gun;
 
         // properties
         this.setOrigin(0, 0);   // set origin to top left
@@ -16,22 +19,23 @@ export default class Background extends Phaser.GameObjects.Zone {
        this.setInteractive();
 
         // add events (event when clicked)
-        this.on('pointerdown', function (pointer) { this.miss(this.scene, pointer) });
+        this.on('pointerdown', function (pointer) { this.miss(pointer, this.scene) });
 
 
     }
 
     // miss was registered
-    miss(scene, pointer) {
+    miss(pointer, scene) {
 
-        // add miss to counter (only if the first target was already hit)
-        if (scene.target.counter > 0) {
-            this.counter++;
+        if (this.gun.shoot()) {             // only shoot if gun is ready
+            // add miss to counter (only if the first target was already hit)
+            if (scene.target.counter > 0) {
+                this.counter++;
+            }
+
+            // actions on scene
+            scene.missTarget(pointer);
         }
-
-        // actions on scene
-        scene.missTarget(pointer);
-
     }
 
 }

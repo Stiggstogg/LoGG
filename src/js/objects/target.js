@@ -2,12 +2,15 @@
 
 export default class Target extends Phaser.GameObjects.Rectangle {
 
-    constructor(scene, xGame, yGame, width, height, fillColor, area) {
+    constructor(scene, xGame, yGame, width, height, fillColor, area, gun, flashSpeed) {
 
         super(scene, 0, 0, width, height, fillColor);
 
         // get the game area (origin and size)
         this.gameArea = area;
+
+        // gun
+        this.gun = gun;
 
         // calculate the target size in game coordinates (%)
         this.widthGame = this.width / this.gameArea.width * 100;
@@ -27,24 +30,26 @@ export default class Target extends Phaser.GameObjects.Rectangle {
         // set interactivity
         this.setInteractive();
         this.input.alwaysEnabled = true;     // needs to be true otherwise the pointerdown event will not fire if alpha is set to 0
-        this.on('pointerdown', function () { this.hit(this.scene) });   // add events (event when clicked)
+        this.on('pointerdown', function (pointer) { this.hit(pointer, this.scene) });   // add events (event when clicked)
 
         // set tween
-        this.addTween(scene);
+        this.addTween(scene, flashSpeed);
 
     }
 
     // target was hit
-    hit(scene) {
+    hit(pointer, scene) {
 
-        // add hit to counter
-        this.counter++;
+        if (this.gun.shoot()) {             // only shoot if gun is ready
+            // add hit to counter
+            this.counter++;
 
-        // flash target
-        this.flashTween.play();
+            // flash target
+            this.flashTween.play();
 
-        // actions on scene
-        scene.hitTarget(this.counter);
+            // actions on scene
+            scene.hitTarget(pointer, this.counter);
+        }
 
     }
 
@@ -66,13 +71,13 @@ export default class Target extends Phaser.GameObjects.Rectangle {
     }
 
     // add flash tween
-    addTween(scene) {
+    addTween(scene, flashSpeed) {
 
         // flash tween of the target (when hit)
         this.flashTween = scene.tweens.add({
             targets: this,
             alpha: 1,
-            duration: 50,
+            duration: flashSpeed,
             paused: true,       // pause to be able to control the tween
             yoyo: true,          // tween will go back to beginning state
             ease: 'Quad.easeInQuad'  // easing function for smoother transition

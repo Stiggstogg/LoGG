@@ -16,25 +16,27 @@ export default class Gun {
 
     }
 
-    // shoot    // TODO: Continue here!
+    // shoot
     shoot() {
 
         if (this.ready && this.ammo > 0) {
 
-            console.log('shoot')
-
-            this.ammo--;                    // remove one shot from the magazine
+            //this.ammo--;                    // remove one shot from the magazine  TODO: Add again as soon as ammo is implemented
             this.ready = false;             // change the state to false
 
             this.scene.time.addEvent({
-                delay: 5000,
+                delay: this.shootSpeed,
                 callback: function() {
-                    console.log('ready');
                     this.ready = true;
                 },
                 callbackScope: this
             });
 
+            return true;
+
+        }
+        else {
+            return false;
         }
 
 

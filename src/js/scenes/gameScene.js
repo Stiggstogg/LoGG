@@ -3,7 +3,7 @@
 // imports
 import Background from '../objects/background.js'
 import Target from '../objects/target.js'
-import Miss from '../objects/miss.js'
+import Impact from '../objects/impact.js'
 import Gun from '../objects/gun.js'
 
 export default class gameScene extends Phaser.Scene {
@@ -31,13 +31,17 @@ export default class gameScene extends Phaser.Scene {
         this.properties = {
             color1: 0x27ff00,       // color as hex number
             color2: '#27ff00',      // the same color as above as string
+            color3: 0x000000,        // second color of the game
             font: 'Courier'         // font
         };
 
         // Gun properties
-        this.shootSpeed = 50;       // time between shots in ms
+        this.shootSpeed = 500;      // time between shots in ms
         this.reloadSpeed = 1000;    // reloading speed
         this.capacity = 5;          // gun capacity
+
+        // tween properties
+        this.flashDuration = 50;    // camera, impact and target flash speed in ms (attention: as yoyo is activated for impact and target the flash speed will be twice as long)
 
         // line properties
         this.lineWidth = 5;         // width of the lines (in px)
@@ -49,8 +53,8 @@ export default class gameScene extends Phaser.Scene {
         this.xFirst = 50;           // x coordinate of the first target
         this.yFirst = 50;           // y coordinate of the first target
 
-        // miss marker properties
-        this.missSize = 20;
+        // impact marker properties
+        this.impactSize = 20;
 
         // numbers for calculating the score
         this.finalPerformance = {
@@ -70,12 +74,13 @@ export default class gameScene extends Phaser.Scene {
         this.addTextStats();                // add the stats text on the right pane
 
         // setup various objects
-        this.miss = this.add.existing(new Miss(this, 0, 0, this.missSize, this.properties.color1));     // miss object which shows the impact of the missed shots
+        this.impact = this.add.existing(new Impact(this, 0, 0, this.impactSize, this.properties.color1, this.properties.color3, this.flashDuration));     // impact object which shows the impact of the shots
         this.gun = new Gun(this, this.shootSpeed, this.reloadSpeed, this.capacity);                           // gun object which manages the gun
 
         // setup of interactive objects
-        this.background = this.add.existing(new Background(this, 0, 0, this.gw, this.gh));  // background (registers misses)
-        this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize, this.properties.color1, this.gameArea)); // target to shoot on
+        this.background = this.add.existing(new Background(this, 0, 0, this.gw, this.gh, this.gun));  // background (registers misses)
+        this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize,
+            this.properties.color1, this.gameArea, this.gun, this.flashDuration)); // target to shoot on
 
 
 
@@ -111,7 +116,7 @@ export default class gameScene extends Phaser.Scene {
     }
 
     // actions which happen on the scene when the target is hit
-    hitTarget(hitCounter) {
+    hitTarget(pointer, hitCounter) {
 
         // if it is the first hit, start the timer
         if (hitCounter === 1) {
@@ -121,6 +126,7 @@ export default class gameScene extends Phaser.Scene {
         // animations (tweens and sounds)
         this.flashCamera();                     // flash camera
         this.soundHit.play();                   // play sound
+        this.impact.show(pointer.x, pointer.y, true);   // show where the shot was hit (show impact)
 
         // calculate coordinates of the new target
         this.target.setNewTarget();
@@ -144,16 +150,13 @@ export default class gameScene extends Phaser.Scene {
     // function which defines what happens when a target is missed
     missTarget(pointer) {
 
-        this.gun.shoot();
+            // animations (tweens and sounds)
+            this.flashCamera();                     // camera flash
+            this.soundMiss.play();                  // miss sound
+            this.impact.show(pointer.x, pointer.y, false);   // show where the shot was hit (show impact)
 
-        // animations (tweens and sounds)
-        this.flashCamera();                     // camera flash
-        this.soundMiss.play();                  // miss sound
-        this.miss.show(pointer.x, pointer.y);   // show where the shot was hit (show impact)
-
-        // adapt texts
-        this.hitRateCalc();
-
+            // adapt texts
+            this.hitRateCalc();
     }
 
     // final screen
@@ -183,7 +186,7 @@ export default class gameScene extends Phaser.Scene {
 
     // flash camera (when shooting)
     flashCamera() {
-        this.cameras.main.flash(100);
+        this.cameras.main.flash(this.flashDuration);
     }
 
     // Add lines to the screen
@@ -212,6 +215,15 @@ export default class gameScene extends Phaser.Scene {
         gameArea.height = (this.gh - this.lineWidth) - (this.gh * this.horLinePos + this.lineWidth/2);
 
         return gameArea;
+
+    }
+
+    // Add gun elements (Ammo, Reload, busy indicator)
+    addGunElements() {
+
+        // gun busy indicator TODO: Continue here
+JSON
+
 
     }
 
