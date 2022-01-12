@@ -5,6 +5,7 @@ import Background from '../objects/background.js'
 import Target from '../objects/target.js'
 import Impact from '../objects/impact.js'
 import Gun from '../objects/gun.js'
+import {borderColor, relBorderWidth} from "../Helper/globals";
 
 export default class gameScene extends Phaser.Scene {
 
@@ -31,7 +32,7 @@ export default class gameScene extends Phaser.Scene {
         this.properties = {
             color1: 0x27ff00,       // color as hex number
             color2: '#27ff00',      // the same color as above as string
-            color3: 0x000000,        // second color of the game
+            color3: 0x000000,       // second color of the game
             font: 'Courier'         // font
         };
 
@@ -44,9 +45,40 @@ export default class gameScene extends Phaser.Scene {
         this.flashDuration = 50;    // camera, impact and target flash speed in ms (attention: as yoyo is activated for impact and target the flash speed will be twice as long)
 
         // line properties
-        this.lineWidth = 5;         // width of the lines (in px)
-        this.vertLinePos = 0.8;     // relative y position of the vertical line (above is the title) (relative to game height)
-        this.horLinePos = 0.2;      // relative x position of the horizontal line (to the left the coordinates are shown) (relative to game width)
+        const relLineWidth = 0.0047;                        // relative width of the lines (relative to game width); 0.0047 ~ 6 px
+        this.lineWidth = this.gw * relLineWidth;            // width of the lines (in px)
+
+        // Sinden Light Gun border
+        this.borderWidth = Math.ceil(this.gh * relBorderWidth);    // width of the border for the Sinden Light Gun
+
+        // title area (area where the title is written, top)
+        const relTitleHeight = 0.2;                     // relative height of the title bar (relative to game height)
+        this.titlePosDim = {                            // position and dimension of the title bar
+            x: this.borderWidth,
+            y: this.borderWidth,
+            width: this.gw - 2 * this.borderWidth,
+            height: this.gh * relTitleHeight
+        };
+
+        // title font size
+        this.titleFontSize = 60;                        // title font size in px
+
+        // status area (area where the status is written, bottom right)
+        const relStatusWidth = 0.2;                     // relative width of the status bar (relative to game width)
+        this.statusPosDim = {                           // position and dimension of the status bar
+            x: this.gw * (1 - relStatusWidth) - this.borderWidth,
+            y: this.titlePosDim.y + this.titlePosDim.height + this.lineWidth,
+            width: this.gw * relStatusWidth,
+            height: this.gh - this.titlePosDim.height - 2 * this.borderWidth- this.lineWidth
+        };
+
+        // shooting area (area where the targets are shot, bottom left)
+        this.shootingPosDim = {                         // position and dimension of the shooting area
+            x: this.titlePosDim.x,
+            y: this.statusPosDim.y,
+            width: this.titlePosDim.width - this.statusPosDim.width - this.lineWidth,
+            height: this.statusPosDim.height
+        };
 
         // target properties
         this.targetSize = 100;      // size of the target
@@ -69,11 +101,18 @@ export default class gameScene extends Phaser.Scene {
     create() {
 
         // setup of the game objects (non-interactive)
-        this.gameArea = this.addLines();    // add lines and get game area (shooting area)
-        this.addTextTitle();                // add title text on the top pane ('200 Episodes Light Gun Reviews')
-        this.addTextStats();                // add the stats text on the right pane
+        this.addLines();                    // add lines
+        this.addTextTitle();                // add title text in the title area
+        //this.addTextStats();              // add the stats text on the right pane
 
-        // setup various objects
+
+        //this.add.rectangle(this.titlePosDim.x, this.titlePosDim.y, this.titlePosDim.width, this.titlePosDim.height, 0xff0000).setOrigin(0).setAlpha(0.5).setDepth(3);
+        //this.add.rectangle(this.statusPosDim.x, this.statusPosDim.y, this.statusPosDim.width, this.statusPosDim.height, 0xffff00).setOrigin(0).setAlpha(0.5).setDepth(3);
+        //this.add.rectangle(this.shootingPosDim.x, this.shootingPosDim.y, this.shootingPosDim.width, this.shootingPosDim.height, 0xff00ff).setOrigin(0).setAlpha(0.5).setDepth(3);
+
+
+
+/*        // setup various objects
         this.impact = this.add.existing(new Impact(this, 0, 0, this.impactSize, this.properties.color1, this.properties.color3, this.flashDuration));     // impact object which shows the impact of the shots
         this.gun = new Gun(this, this.shootSpeed, this.reloadSpeed, this.capacity);                           // gun object which manages the gun
 
@@ -100,7 +139,7 @@ export default class gameScene extends Phaser.Scene {
 
             this.cursorHide = !this.cursorHide;
 
-        }, this);
+        }, this);*/
 
     }
 
@@ -110,9 +149,9 @@ export default class gameScene extends Phaser.Scene {
         // set timer
         let now = new Date();                               // current time
         let diff = now - this.startTime;                    // difference to start time in milli seconds
-        if (this.target.counter > 0 && this.target.counter < this.titleText.length) {                      // change the time text if the first target was shot and stop when the last target was shot. The final time is added in finishGame()
+        /*if (this.target.counter > 0 && this.target.counter < this.titleText.length) {                      // change the time text if the first target was shot and stop when the last target was shot. The final time is added in finishGame()
             this.timeText.setText(this.convertTime(diff));  // convert time to string and set timer text
-        }
+        }*/
     }
 
     // actions which happen on the scene when the target is hit
@@ -189,63 +228,56 @@ export default class gameScene extends Phaser.Scene {
         this.cameras.main.flash(this.flashDuration);
     }
 
-    // Add lines to the screen
+    // Add lines to the screen (outer border and play area lines)
     addLines() {
 
-        // rectangle (border)
-        let rect = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
-        rect.setOrigin(0);
-        rect.setStrokeStyle(this.lineWidth*2, this.properties.color1);   // lineWidth needs to be doubled as half of the line will be outside
+        // vertical and horizontal lines for the game area
+        const vertLine = this.add.line(0, 0, this.statusPosDim.x - this.lineWidth/2, this.statusPosDim.y, this.statusPosDim.x - this.lineWidth/2, this.statusPosDim.y + this.statusPosDim.height, this.properties.color1);
+        const horLine = this.add.line(0, 0, this.titlePosDim.x, this.titlePosDim.y + this.titlePosDim.height + this.lineWidth/2,
+            this.titlePosDim.x + this.titlePosDim.width, this.titlePosDim.y + this.titlePosDim.height + this.lineWidth/2, this.properties.color1);
 
-        // lines
-        let vertLine = this.add.line(0, 0, this.gw*this.vertLinePos, this.gh*this.horLinePos, this.gw*this.vertLinePos, this.gh, this.properties.color1);
-        let horLine = this.add.line(0, 0, 0, this.gh*this.horLinePos, this.gw, this.gh*this.horLinePos, this.properties.color1);
+        vertLine.setOrigin(0).setLineWidth(this.lineWidth/2);       // lineWidth needs to be halfed as the width is added to both sides
+        horLine.setOrigin(0).setLineWidth(this.lineWidth/2);
 
-        vertLine.setOrigin(0);
-        horLine.setOrigin(0);
-
-        vertLine.setLineWidth(this.lineWidth/2);    // lineWidth needs to be halfed as the width is added to both sides
-        horLine.setLineWidth(this.lineWidth/2);
-
-        // calculate game area (shooting area) origin (top left) and size
-        let gameArea = {};
-        gameArea.x = this.lineWidth;
-        gameArea.y = this.gh * this.horLinePos + this.lineWidth/2;
-        gameArea.width = (this.gw * this.vertLinePos - this.lineWidth/2) - this.lineWidth;
-        gameArea.height = (this.gh - this.lineWidth) - (this.gh * this.horLinePos + this.lineWidth/2);
-
-        return gameArea;
-
-    }
-
-    // Add gun elements (Ammo, Reload, busy indicator)
-    addGunElements() {
-
-        // gun busy indicator TODO: Continue here
-JSON
-
+        // Sinden Light Gun or neutral border
+        const sindenBorder = this.add.rectangle(0, 0, this.gw, this.gh); // x, y, width, height
+        sindenBorder.setOrigin(0).setStrokeStyle(this.borderWidth * 2, borderColor); // lineWidth needs to be doubled as half of the line will be outside
 
     }
 
     // Add title text
     addTextTitle() {
 
-        // Create title text array, style and set position
+        // Create title text array and style
         this.titleText = [];            // title text array
-        let titleStyle = {fontFamily: this.properties.font, fontSize: '60px', color: this.properties.color2, fontStyle: 'bold'};
-        let titleStartPos = 0.043;      // x start position of the title (relative to game width)
-        let titleSeparation = 0.03;     // separation between the letter (relative to game width)
+        const titleStyle = {fontFamily: this.properties.font, fontSize: this.titleFontSize + 'px', color: this.properties.color2, fontStyle: 'bold'};
+        const titleLength = this.title.length;      // number of characters in the title (incl. spaces)
+
+        // calculate the position of the letters (in the middle of the title area and evenly distributed)
+        const spaceTitleText = this.titlePosDim.width * 0.9;     // maximum space of the title text (5 % on each side should be empty)
+        const spacePerLetter = spaceTitleText / titleLength;     // maximum space per letter
+        const letterSeparation = spacePerLetter - this.titleFontSize * 0.62     // calculate the spacing between the letters (space plus width of a letter, which is 62 % of the font size)
+        const titleWidth = spacePerLetter * titleLength - letterSeparation;
+
+        const titleStartPos = this.titlePosDim.x + (this.titlePosDim.width - titleWidth) / 2;      // x start position of the title (relative to game width)
+
+        // TODO: Check what happens with shorter titles and longer titles! Height!
 
         // add all letters (as separate texts) to the scene (spaces are skipped!)
-        for (let i = 0; i < this.title.length; i++) {
+        for (let i = 0; i < titleLength; i++) {
             if (this.title[i] !== ' ') {                // skip spaces
                 this.titleText.push(                    // put all texts in an array so that they can be changed later (change background when target is hit)
-                    this.add.text(titleStartPos * this.gw + i * titleSeparation * this.gw,
+                    this.add.text(titleStartPos + i * spacePerLetter,
                     this.gh * 0.06,
                     this.title[i],
                     titleStyle));
             }
         }
+
+
+        //this.add.text(0.1 * this.gw, 0.5 * this.gh, 'Lights Out\nGun Game', titleStyle);
+        //this.add.rectangle(0.3 * this.gw, this.gh * 0.5, 60, 60, 0xffff00).setOrigin(0).setAlpha(0.5);
+        //this.add.rectangle(0.3 * this.gw, this.gh * 0.5 + 60, 60, 60, 0xff0000).setOrigin(0).setAlpha(0.5);
 
     }
 
@@ -290,6 +322,14 @@ JSON
         this.hitRateText.setOrigin(1, 0);   // right aligned
         this.timeText = this.add.text(this.gw * xPos[2], this.gh * (yPos[1] + 2 * ySpace) ,'00:00', textStyle);  // time
         this.timeText.setOrigin(1, 0);  // right aligned
+
+    }
+
+    // Add gun elements (Ammo, Reload, busy indicator)
+    addGunElements() {
+
+        // gun busy indicator TODO: Continue here
+
 
     }
 
