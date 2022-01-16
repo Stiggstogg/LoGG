@@ -38,7 +38,7 @@ export default class gameScene extends Phaser.Scene {
 
         // Gun properties
         this.shootSpeed = 500;      // time between shots in ms
-        this.reloadSpeed = 1000;    // reloading speed
+        this.reloadSpeed = 1000;    // reloading speed in ms
         this.capacity = 5;          // gun capacity
 
         // tween properties
@@ -103,14 +103,7 @@ export default class gameScene extends Phaser.Scene {
         // setup of the game objects (non-interactive)
         this.addLines();                    // add lines
         this.addTextTitle();                // add title text in the title area
-        //this.addTextStats();              // add the stats text on the right pane
-
-
-        //this.add.rectangle(this.titlePosDim.x, this.titlePosDim.y, this.titlePosDim.width, this.titlePosDim.height, 0xff0000).setOrigin(0).setAlpha(0.5).setDepth(3);
-        //this.add.rectangle(this.statusPosDim.x, this.statusPosDim.y, this.statusPosDim.width, this.statusPosDim.height, 0xffff00).setOrigin(0).setAlpha(0.5).setDepth(3);
-        //this.add.rectangle(this.shootingPosDim.x, this.shootingPosDim.y, this.shootingPosDim.width, this.shootingPosDim.height, 0xff00ff).setOrigin(0).setAlpha(0.5).setDepth(3);
-
-
+        this.addTextStats();                // add the stats text on the right pane
 
 /*        // setup various objects
         this.impact = this.add.existing(new Impact(this, 0, 0, this.impactSize, this.properties.color1, this.properties.color3, this.flashDuration));     // impact object which shows the impact of the shots
@@ -248,61 +241,68 @@ export default class gameScene extends Phaser.Scene {
     // Add title text
     addTextTitle() {
 
-        // Create title text array and style
-        this.titleText = [];            // title text array
+        // create title text array and style
+        this.titleText = [];                        // title text array (array which contains the title characters as single text objects)
         const titleStyle = {fontFamily: this.properties.font, fontSize: this.titleFontSize + 'px', color: this.properties.color2, fontStyle: 'bold'};
         const titleLength = this.title.length;      // number of characters in the title (incl. spaces)
 
-        // calculate the position of the letters (in the middle of the title area and evenly distributed)
-        const spaceTitleText = this.titlePosDim.width * 0.9;     // maximum space of the title text (5 % on each side should be empty)
-        const spacePerLetter = spaceTitleText / titleLength;     // maximum space per letter
-        const letterSeparation = spacePerLetter - this.titleFontSize * 0.62     // calculate the spacing between the letters (space plus width of a letter, which is 62 % of the font size)
-        const titleWidth = spacePerLetter * titleLength - letterSeparation;
-
-        const titleStartPos = this.titlePosDim.x + (this.titlePosDim.width - titleWidth) / 2;      // x start position of the title (relative to game width)
-
-        // TODO: Check what happens with shorter titles and longer titles! Height!
-
-        // add all letters (as separate texts) to the scene (spaces are skipped!)
+        // add all letters (as separate text objects) to the title text array
         for (let i = 0; i < titleLength; i++) {
-            if (this.title[i] !== ' ') {                // skip spaces
-                this.titleText.push(                    // put all texts in an array so that they can be changed later (change background when target is hit)
-                    this.add.text(titleStartPos + i * spacePerLetter,
-                    this.gh * 0.06,
-                    this.title[i],
-                    titleStyle));
+            if (this.title[i] !== ' ') {                    // skip spaces
+                this.titleText.push(                        // put all texts in an array so that they can be changed later (change background when target is hit)
+                    this.add.text(0,0,                // position is wrong now, will be adapted later
+                        this.title[i],
+                        titleStyle));
             }
         }
 
+        // calculate the x position of the letters (in the middle of the title area and evenly distributed)
+        const letterWidth = this.titleText[0].width;                                // get width of a letter (full box)
+        const spaceTitleText = this.titlePosDim.width * 0.9;                        // maximum space of the title text (5 % on each side should be empty)
+        const spacePerLetter = spaceTitleText / titleLength;                        // maximum space per letter
+        const letterSeparation = spacePerLetter - letterWidth;         // calculate the spacing between the letter boxes (letter boxes: space between the full size of a single letter text object)
+        const titleWidth = spacePerLetter * titleLength - letterSeparation;         // calculate the full width of the title (the space of the last letter is subtracted to make the title appear in the middle)
 
-        //this.add.text(0.1 * this.gw, 0.5 * this.gh, 'Lights Out\nGun Game', titleStyle);
-        //this.add.rectangle(0.3 * this.gw, this.gh * 0.5, 60, 60, 0xffff00).setOrigin(0).setAlpha(0.5);
-        //this.add.rectangle(0.3 * this.gw, this.gh * 0.5 + 60, 60, 60, 0xff0000).setOrigin(0).setAlpha(0.5);
+        const titleStartPosX = this.titlePosDim.x + (this.titlePosDim.width - titleWidth) / 2;      // x start position of the title (in pixels)
+
+        // calculate the y position of the letters (in the middle of the title area)
+        const letterHeight = this.titleText[0].height;                               // get height of a letter (full box)
+        const titlePosY = this.titlePosDim.y + (this.titlePosDim.height - letterHeight) / 2;      // y start position of the title (in pixels)
+
+        // position all letters correctly (in the middle and evenly spaced)
+        let j = 0;
+
+        for (let i = 0; i < titleLength; i++) {
+            if (this.title[i] !== ' ') {                // skip spaces
+                this.titleText[j].setPosition(titleStartPosX + i * spacePerLetter, titlePosY);                     // put all texts in an array so that they can be changed later (change background when target is hit)
+                j++;
+            }
+        }
+
 
     }
 
     // Add stats text (on the right pane)
     addTextStats() {
 
-        // x and y position of the texts and vertical spaces (all relative to game width and height)
-        let xPos = [0.82, 0.95, 0.99];          // x positions: 0: names (left aligned), 1: coordinates (right aligned), 2: stats (right aligned)
-        let ySpace = 0.05;                      // vertical space between the different texts
-        let yPos = [0.30];                      // y positions: 0: position of first coordinate (x), 1: position of first stat text (hits)
-        yPos.push(yPos[0] + 6 * ySpace);
+        // x and y position of the texts and vertical spaces (all relative to the width and height of the status area)
+        const xPos = [0.10, 0.9, 0.9];        // x positions relative to status area width: 0: names / labels (left aligned), 1: coordinates (right aligned), 2: stats (right aligned)
+        const yPos = [0.13, 0.5];               // y positions relative to status area height: 0: position of first coordinate (x), 1: position of first stat text (hits etc.)
+        const ySpace = [0.1, 0.06];            // y spaces relative to status area height: 0: between the coordinates, 1: between the status texts (hits);
 
         // coordinates (x and y)
         // ---------------------
 
-        let textStyle = {fontFamily: this.properties.font, fontSize: '50px', color: this.properties.color2};    // text style
+        const textStyle = {fontFamily: this.properties.font, fontSize: '50px', color: this.properties.color2};    // text style
 
         // names
-        this.add.text(this.gw * xPos[0], this.gh * yPos[0] ,'x:', textStyle);
-        this.add.text(this.gw * xPos[0], this.gh * (yPos[0] + 2 * ySpace) ,'y:', textStyle);
+        const xLabel = this.add.text(this.statusPosDim.x + this.statusPosDim.width * xPos[0], this.statusPosDim.y + this.statusPosDim.height * yPos[0],'x:', textStyle);
+        const yLabel = this.add.text(this.statusPosDim.x + this.statusPosDim.width * xPos[0], this.statusPosDim.y + this.statusPosDim.height * (yPos[0] + ySpace[0]) ,'y:', textStyle);
 
         // values
-        this.xCoordText = this.add.text(this.gw * xPos[1], this.gh * yPos[0], this.xFirst, textStyle);    // x
+        this.xCoordText = this.add.text(this.statusPosDim.x + this.statusPosDim.width * xPos[1], xLabel.y, this.xFirst, textStyle);    // x
         this.xCoordText.setOrigin(1, 0);        // right aligned
-        this.yCoordText = this.add.text(this.gw * xPos[1], this.gh * (yPos[0] + 2 * ySpace), this.yFirst, textStyle); // y
+        this.yCoordText = this.add.text(this.xCoordText.x, yLabel.y, this.yFirst, textStyle); // y
         this.yCoordText.setOrigin(1, 0);        // right aligned
 
         // stats (hits, hit rate and time)
@@ -311,16 +311,16 @@ export default class gameScene extends Phaser.Scene {
         textStyle.fontSize = '23px';        // text style (same as coordinates, but smaller)
 
         // names
-        this.add.text(this.gw * xPos[0], this.gh * yPos[1] ,'Hits:', textStyle);
-        this.add.text(this.gw * xPos[0], this.gh * (yPos[1] + ySpace) ,'Hit Rate:', textStyle);
-        this.add.text(this.gw * xPos[0], this.gh * (yPos[1] + 2 * ySpace) ,'Time:', textStyle);
+        const hitsLabel = this.add.text(xLabel.x, this.statusPosDim.y + this.statusPosDim.height * yPos[1],'Hits:', textStyle);
+        const rateLabel = this.add.text(xLabel.x, this.statusPosDim.y + this.statusPosDim.height * (yPos[1] + ySpace[1]) ,'Hit Rate:', textStyle);
+        const timeLabel = this.add.text(xLabel.x, this.statusPosDim.y + this.statusPosDim.height * (yPos[1] + 2 * ySpace[1]) ,'Time:', textStyle);
 
         // values
-        this.hitText = this.add.text(this.gw * xPos[2], this.gh * yPos[1] ,'0', textStyle);  // hits
+        this.hitText = this.add.text(this.statusPosDim.x + this.statusPosDim.width * xPos[2], hitsLabel.y ,'0', textStyle);  // hits
         this.hitText.setOrigin(1, 0);       // right aligned
-        this.hitRateText = this.add.text(this.gw * xPos[2], this.gh * (yPos[1] + ySpace) ,'- %', textStyle); // hit rate
+        this.hitRateText = this.add.text(this.hitText.x, rateLabel.y ,'- %', textStyle); // hit rate
         this.hitRateText.setOrigin(1, 0);   // right aligned
-        this.timeText = this.add.text(this.gw * xPos[2], this.gh * (yPos[1] + 2 * ySpace) ,'00:00', textStyle);  // time
+        this.timeText = this.add.text(this.hitText.x, timeLabel.y ,'00:00', textStyle);  // time
         this.timeText.setOrigin(1, 0);  // right aligned
 
     }
