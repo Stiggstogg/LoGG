@@ -33,6 +33,7 @@ export default class gameScene extends Phaser.Scene {
             color1: 0x27ff00,       // color as hex number
             color2: '#27ff00',      // the same color as above as string
             color3: 0x000000,       // second color of the game
+            color4: '#000000',      // the same color as above as string
             font: 'Courier'         // font
         };
 
@@ -105,22 +106,25 @@ export default class gameScene extends Phaser.Scene {
         this.addTextTitle();                // add title text in the title area
         this.addTextStats();                // add the stats text on the right pane
 
-/*        // setup various objects
-        this.impact = this.add.existing(new Impact(this, 0, 0, this.impactSize, this.properties.color1, this.properties.color3, this.flashDuration));     // impact object which shows the impact of the shots
+
+        // setup various objects
+        //this.impact = this.add.existing(new Impact(this, 0, 0, this.impactSize, this.properties.color1, this.properties.color3, this.flashDuration));     // impact object which shows the impact of the shots
         this.gun = new Gun(this, this.shootSpeed, this.reloadSpeed, this.capacity);                           // gun object which manages the gun
+
+        // add gun elements
+        this.addGunElements();              // add ammunition and gun reload button
+
 
         // setup of interactive objects
         this.background = this.add.existing(new Background(this, 0, 0, this.gw, this.gh, this.gun));  // background (registers misses)
         this.target = this.add.existing(new Target(this, this.xFirst, this.yFirst, this.targetSize, this.targetSize,
-            this.properties.color1, this.gameArea, this.gun, this.flashDuration)); // target to shoot on
-
-
+            this.properties.color1, this.shootingPosDim, this.gun, this.flashDuration)); // target to shoot on
 
         // Audio
         this.soundHit = this.sound.add('hit');
         this.soundMiss = this.sound.add('miss');
 
-        // keyboard events
+/*        // keyboard events
         this.keySpace = this.input.keyboard.addKey('Space');    // hide cursor
         this.keySpace.on('down', function () {
 
@@ -132,7 +136,7 @@ export default class gameScene extends Phaser.Scene {
 
             this.cursorHide = !this.cursorHide;
 
-        }, this);*/
+        }, this); */
 
     }
 
@@ -158,7 +162,10 @@ export default class gameScene extends Phaser.Scene {
         // animations (tweens and sounds)
         this.flashCamera();                     // flash camera
         this.soundHit.play();                   // play sound
-        this.impact.show(pointer.x, pointer.y, true);   // show where the shot was hit (show impact)
+        //this.impact.show(pointer.x, pointer.y, true);   // show where the shot was hit (show impact)
+
+        // update ammo string
+        this.ammoString.setText(this.gun.getAmmoString());
 
         // calculate coordinates of the new target
         this.target.setNewTarget();
@@ -185,7 +192,10 @@ export default class gameScene extends Phaser.Scene {
             // animations (tweens and sounds)
             this.flashCamera();                     // camera flash
             this.soundMiss.play();                  // miss sound
-            this.impact.show(pointer.x, pointer.y, false);   // show where the shot was hit (show impact)
+            //this.impact.show(pointer.x, pointer.y, false);   // show where the shot was hit (show impact)
+
+            // update ammo string
+            this.ammoString.setText(this.gun.getAmmoString());
 
             // adapt texts
             this.hitRateCalc();
@@ -286,8 +296,8 @@ export default class gameScene extends Phaser.Scene {
     addTextStats() {
 
         // x and y position of the texts and vertical spaces (all relative to the width and height of the status area)
-        const xPos = [0.10, 0.9, 0.9];        // x positions relative to status area width: 0: names / labels (left aligned), 1: coordinates (right aligned), 2: stats (right aligned)
-        const yPos = [0.13, 0.5];               // y positions relative to status area height: 0: position of first coordinate (x), 1: position of first stat text (hits etc.)
+        const xPos = [0.1, 0.9, 0.9];        // x positions relative to status area width: 0: names / labels (left aligned), 1: coordinates (right aligned), 2: stats (right aligned)
+        const yPos = [0.05, 0.3];               // y positions relative to status area height: 0: position of first coordinate (x), 1: position of first stat text (hits etc.)
         const ySpace = [0.1, 0.06];            // y spaces relative to status area height: 0: between the coordinates, 1: between the status texts (hits);
 
         // coordinates (x and y)
@@ -325,11 +335,62 @@ export default class gameScene extends Phaser.Scene {
 
     }
 
-    // Add gun elements (Ammo, Reload, busy indicator)
+    // Add elements of the gun (reload button and ammunition)
     addGunElements() {
 
-        // gun busy indicator TODO: Continue here
+        // size, position and other settings of the elements
+        const reloadHeight = 0.2;          // height of the reload button (relative to status area height)
+        const ySpace = 0.005;                // y space between the ammunition and the reload button (relative to status area height)
+        const xPos = [0.1, 0.9];                   // x positions relative to status area width: 0: label (left aligned), 1: value (right aligned)
 
+
+        const textStyle = {fontFamily: this.properties.font, fontSize: '50px', color: this.properties.color4, fontStyle: 'bold'};    // text style
+
+        // reload button
+        // ---------------
+
+        this.reloadButton = this.add.rectangle(this.statusPosDim.x,
+            this.statusPosDim.y + this.statusPosDim.height * (1 - reloadHeight),
+            this.statusPosDim.width,
+            this.statusPosDim.height * reloadHeight,
+            this.properties.color1).setOrigin(0);
+
+        // make reload button interactive and add event
+        this.reloadButton.setInteractive();
+        this.reloadButton.on('pointerdown', function (pointer) { this.reload() }, this);   // add reload event
+
+        this.reloadText = this.add.text(this.reloadButton.x + this.reloadButton.width / 2,
+            this.reloadButton.y + this.reloadButton.height / 2,
+            'Reload', textStyle).setOrigin(0.5);
+
+
+        // ammunition
+        // --------------
+
+        textStyle.fontSize = '30px'
+        textStyle.color = this.properties.color2;
+        textStyle.fontStyle = '';
+
+        // label
+        this.add.text(this.statusPosDim.x + xPos[0] * this.statusPosDim.width,
+            this.reloadButton.y - this.reloadButton.height / 2 - this.statusPosDim.height * ySpace,
+            'Ammo:', textStyle);
+
+        // ammunition
+        this.ammoString = this.add.text(this.statusPosDim.x + xPos[1] * this.statusPosDim.width,
+            this.reloadButton.y - this.reloadButton.height / 2 - this.statusPosDim.height * ySpace,
+            this.gun.getAmmoString(), textStyle).setOrigin(1, 0);
+
+    }
+
+    // reload (action which happens if you click on the reload button or key)
+    reload() {
+
+        // trigger the reload in the gun object
+        this.gun.reload();
+
+        // update ammo string
+        this.ammoString.setText(this.gun.getAmmoString());
 
     }
 

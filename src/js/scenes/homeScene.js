@@ -36,6 +36,8 @@ export default class gameScene extends Phaser.Scene {
             }
         );
         text.setOrigin(0.5, 0.5);
+
+        this.scene.start('Game');   // TODO: Remove when testing is over!
     }
 
 }

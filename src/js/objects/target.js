@@ -2,19 +2,19 @@
 
 export default class Target extends Phaser.GameObjects.Rectangle {
 
-    constructor(scene, xGame, yGame, width, height, fillColor, area, gun, flashSpeed) {
+    constructor(scene, xGame, yGame, width, height, fillColor, shootingArea, gun, flashSpeed) {
 
         super(scene, 0, 0, width, height, fillColor);
 
         // get the game area (origin and size)
-        this.gameArea = area;
+        this.shootingArea = shootingArea;
 
         // gun
         this.gun = gun;
 
         // calculate the target size in game coordinates (%)
-        this.widthGame = this.width / this.gameArea.width * 100;
-        this.heightGame = this.height / this.gameArea.height * 100;
+        this.widthGame = this.width / this.shootingArea.width * 100;
+        this.heightGame = this.height / this.shootingArea.height * 100;
 
         // set starting coordinates
         this.xGame = xGame;
@@ -93,10 +93,10 @@ export default class Target extends Phaser.GameObjects.Rectangle {
     // calculates from game coordinates (area on which can be shot) to the real coordinates in the canvas
     coordGameToCanvas(gameCoord, dim) {
         if (dim === 'x') {
-            return this.gameArea.x + this.gameArea.width * gameCoord / 100;
+            return this.shootingArea.x + this.shootingArea.width * gameCoord / 100;
         }
         else if (dim === 'y') {
-            return this.gameArea.y + (100 - gameCoord)/100 * this.gameArea.height;
+            return this.shootingArea.y + (100 - gameCoord)/100 * this.shootingArea.height;
         }
     }
 
